@@ -1,0 +1,36 @@
+# GitHub Linguist overrides
+# https://github.com/github/linguist/blob/master/docs/overrides.md
+
+# Mark lock files as generated (excluded from language stats)
+package-lock.json linguist-generated=true
+uv.lock linguist-generated=true
+pnpm-lock.yaml linguist-generated=true
+
+# Mark build/generated files as generated
+book-source/build/** linguist-generated=true
+book-source/.docusaurus/** linguist-generated=true
+backend/htmlcov/** linguist-generated=true
+
+# Mark test reports as generated
+book-source/playwright-report/** linguist-generated=true
+book-source/test-results/** linguist-generated=true
+
+# Mark documentation as documentation (shows in language stats)
+*.md linguist-documentation=false
+*.mdx linguist-documentation=false
+docs/**/*.md linguist-documentation=false
+book-source/docs/**/*.md linguist-documentation=false
+
+# Vendor files
+node_modules/** linguist-vendored=true
+.venv/** linguist-vendored=true
+
+# Override HTML email templates to not count
+backend/src/services/email_templates/*.html linguist-generated=true
+
+# Make Markdown/MDX the primary language
+*.md linguist-detectable=true
+*.mdx linguist-detectable=true
+
+# JSON schemas are generated
+specs/**/contracts/*.json linguist-generated=true

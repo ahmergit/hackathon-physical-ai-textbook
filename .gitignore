@@ -4,6 +4,10 @@ book-source/build/
 book-source/.docusaurus/
 book-source/.cache/
 
+# Test reports
+book-source/playwright-report/
+book-source/test-results/
+
 # Backend Python
 backend/.venv/
 backend/__pycache__/
