@@ -10,15 +10,15 @@ const config: Config = {
   favicon: 'img/logo.svg',
 
   // Set the production url of your site here
-  url: 'https://yourusername.github.io',
+  url: 'https://ahmergit.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/physical-ai-humaniod-robotics/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'yourusername', // Usually your GitHub org/user name.
-  projectName: 'physical-ai-humaniod-robotics', // Usually your repo name.
+  organizationName: 'ahmergit', // Usually your GitHub org/user name.
+  projectName: 'hackathon-physical-ai-textbook', // Usually your repo name.
   deploymentBranch: 'gh-pages',
   trailingSlash: false,
 
@@ -89,7 +89,7 @@ const config: Config = {
           label: 'Book',
         },
         {
-          href: 'https://github.com/yourusername/physical-ai-humaniod-robotics',
+          href: 'https://github.com/ahmergit/hackathon-physical-ai-textbook',
           label: 'GitHub',
           position: 'right',
         },
