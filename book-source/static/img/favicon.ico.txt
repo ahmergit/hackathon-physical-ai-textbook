@@ -1,0 +1,2 @@
+favicon-placeholder
+Place favicon.ico here

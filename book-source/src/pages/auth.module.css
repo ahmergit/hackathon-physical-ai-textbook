@@ -1,0 +1,231 @@
+/* Authentication pages styling */
+
+.authContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 60px);
+  padding: 2rem 1rem;
+  background: linear-gradient(180deg, #1a1a1a 0%, #242424 100%);
+}
+
+.authCard {
+  background: linear-gradient(180deg, #1e1e2e 0%, #16213e 100%);
+  border-radius: 12px;
+  padding: 3rem 2.5rem;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(99, 102, 241, 0.2);
+}
+
+.authCard h1 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 2rem;
+  color: #ffffff;
+  text-align: center;
+}
+
+.subtitle {
+  text-align: center;
+  color: #9ca3af;
+  margin-bottom: 2rem;
+}
+
+.authForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formGroup label {
+  font-weight: 600;
+  color: #e0e0e0;
+  font-size: 0.95rem;
+}
+
+.formGroup input,
+.formGroup textarea,
+.formGroup select {
+  padding: 0.75rem 1rem;
+  border: 2px solid #3d4555;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s;
+  background: #2d3748;
+  color: #e0e0e0;
+}
+
+.formGroup input:focus,
+.formGroup textarea:focus,
+.formGroup select:focus {
+  outline: none;
+  border-color: #00d4aa;
+  box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.2);
+}
+
+.formGroup input::placeholder {
+  color: #6b7280;
+}
+
+.inputError {
+  border-color: #f56565 !important;
+}
+
+.errorText {
+  color: #fc8181;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.passwordHints small {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.errorMessage {
+  background-color: rgba(252, 129, 129, 0.1);
+  border: 1px solid #fc8181;
+  color: #fc8181;
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.successMessage {
+  text-align: center;
+  color: #00d4aa;
+}
+
+.successMessage h2 {
+  color: #00d4aa;
+  margin-bottom: 1rem;
+}
+
+.successMessage p {
+  color: #9ca3af;
+  margin-bottom: 0.5rem;
+}
+
+.submitButton {
+  background: linear-gradient(135deg, #00d4aa 0%, #00b390 100%);
+  color: #1a1a1a;
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 0.5rem;
+}
+
+.submitButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 212, 170, 0.3);
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.5rem 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #3d4555;
+}
+
+.divider span {
+  padding: 0 1rem;
+  color: #9ca3af;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.altAuth {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.googleButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.5rem;
+  border: 2px solid #3d4555;
+  border-radius: 8px;
+  background: #2d3748;
+  color: #e0e0e0;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.googleButton:hover {
+  border-color: #00d4aa;
+  background: #374151;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.authFooter {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #3d4555;
+  color: #9ca3af;
+}
+
+.authFooter a {
+  color: #00d4aa;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.authFooter a:hover {
+  text-decoration: underline;
+}
+
+.loadingSpinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .authCard {
+    padding: 2rem 1.5rem;
+  }
+
+  .authCard h1 {
+    font-size: 1.75rem;
+  }
+}

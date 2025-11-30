@@ -1,0 +1,272 @@
+openapi: 3.1.0
+info:
+  title: Physical AI Learning Platform - Profile API
+  description: |
+    User profile management endpoints for storing and retrieving learning background data.
+
+    **Profile Data**:
+    - Robotics/Programming Experience Level
+    - AI/ML Experience Level
+    - Learning Goals (free text)
+
+    **Purpose**: Enable personalized learning recommendations based on user background.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000/api
+    description: Development server
+  - url: https://api.physicalai.example.com/api
+    description: Production server
+
+tags:
+  - name: Profile
+    description: User profile CRUD operations
+
+paths:
+  /profile:
+    get:
+      summary: Get authenticated user's profile
+      description: |
+        Retrieve profile data for the currently authenticated user.
+
+        **Protected**: Requires valid session cookie.
+      tags:
+        - Profile
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Profile data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Profile not found (user hasn't completed onboarding)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: Profile not found. Please complete onboarding.
+
+    post:
+      summary: Create or update user profile
+      description: |
+        Create new profile or update existing profile for authenticated user.
+
+        **Upsert Logic**:
+        - If profile exists: Update fields (partial update supported)
+        - If profile doesn't exist: Create new profile
+
+        **Validation**:
+        - Experience levels must be valid enum values
+        - Learning goals max 2000 characters
+      tags:
+        - Profile
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+            examples:
+              complete:
+                summary: Complete profile
+                value:
+                  robotics_programming_experience: intermediate
+                  ai_ml_experience: beginner
+                  learning_goals: "Build a humanoid robot for research, understand reinforcement learning fundamentals"
+              partial:
+                summary: Partial update (only learning goals)
+                value:
+                  learning_goals: "Updated goals: focus on computer vision for robotics"
+      responses:
+        '200':
+          description: Profile created or updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: fastapiusersauth
+      description: HTTP-only cookie containing JWT access token
+
+  schemas:
+    ExperienceLevel:
+      type: string
+      enum:
+        - none
+        - beginner
+        - intermediate
+        - advanced
+        - expert
+      description: |
+        User experience level classification:
+        - **none**: No prior experience
+        - **beginner**: Basic understanding, limited hands-on experience
+        - **intermediate**: Solid foundation, some projects completed
+        - **advanced**: Extensive experience, multiple complex projects
+        - **expert**: Professional-level expertise, can teach others
+
+    ProfileRequest:
+      type: object
+      properties:
+        robotics_programming_experience:
+          allOf:
+            - $ref: '#/components/schemas/ExperienceLevel'
+            - description: Programming and robotics experience level
+              example: intermediate
+        ai_ml_experience:
+          allOf:
+            - $ref: '#/components/schemas/ExperienceLevel'
+            - description: AI and machine learning experience level
+              example: beginner
+        learning_goals:
+          type: string
+          maxLength: 2000
+          nullable: true
+          description: User's learning objectives and goals (free text)
+          example: "Build a humanoid robot for research, understand reinforcement learning, apply AI to physical systems"
+      description: |
+        Profile creation/update request. All fields are optional for partial updates.
+
+    ProfileResponse:
+      type: object
+      required:
+        - id
+        - user_id
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          description: Profile unique identifier
+          example: 1
+        user_id:
+          type: string
+          format: uuid
+          description: User ID (foreign key)
+          example: 550e8400-e29b-41d4-a716-446655440000
+        robotics_programming_experience:
+          allOf:
+            - $ref: '#/components/schemas/ExperienceLevel'
+            - nullable: true
+              example: intermediate
+        ai_ml_experience:
+          allOf:
+            - $ref: '#/components/schemas/ExperienceLevel'
+            - nullable: true
+              example: beginner
+        learning_goals:
+          type: string
+          nullable: true
+          description: User learning goals
+          example: "Build a humanoid robot for research, understand reinforcement learning"
+        created_at:
+          type: string
+          format: date-time
+          description: Profile creation timestamp (ISO 8601)
+          example: "2025-11-29T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Last profile update timestamp (ISO 8601)
+          example: "2025-11-29T15:45:00Z"
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          oneOf:
+            - type: string
+            - type: object
+          description: Error message or structured error object
+
+    ValidationError:
+      type: object
+      properties:
+        detail:
+          type: array
+          items:
+            type: object
+            properties:
+              loc:
+                type: array
+                items:
+                  type: string
+                description: Field location (e.g., ["body", "robotics_programming_experience"])
+              msg:
+                type: string
+                description: Validation error message
+              type:
+                type: string
+                description: Error type identifier
+
+  responses:
+    Unauthorized:
+      description: Unauthorized (missing or invalid session cookie)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            detail: Not authenticated
+
+    ValidationError:
+      description: Validation error (invalid enum value, exceeds max length, etc.)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+          examples:
+            invalidExperience:
+              summary: Invalid experience level
+              value:
+                detail:
+                  - loc: ["body", "robotics_programming_experience"]
+                    msg: "value is not a valid enumeration member; permitted: 'none', 'beginner', 'intermediate', 'advanced', 'expert'"
+                    type: type_error.enum
+            tooLong:
+              summary: Learning goals exceeds max length
+              value:
+                detail:
+                  - loc: ["body", "learning_goals"]
+                    msg: ensure this value has at most 2000 characters
+                    type: value_error.any_str.max_length
+
+  examples:
+    ProfileComplete:
+      summary: Complete profile with all fields
+      value:
+        id: 1
+        user_id: 550e8400-e29b-41d4-a716-446655440000
+        robotics_programming_experience: intermediate
+        ai_ml_experience: beginner
+        learning_goals: "Build a humanoid robot for research, understand reinforcement learning, apply AI to physical systems"
+        created_at: "2025-11-29T10:30:00Z"
+        updated_at: "2025-11-29T15:45:00Z"
+
+    ProfilePartial:
+      summary: Partial profile (incomplete onboarding)
+      value:
+        id: 2
+        user_id: 550e8400-e29b-41d4-a716-446655440001
+        robotics_programming_experience: beginner
+        ai_ml_experience: null
+        learning_goals: null
+        created_at: "2025-11-29T12:00:00Z"
+        updated_at: "2025-11-29T12:00:00Z"

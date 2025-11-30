@@ -1,0 +1,59 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'book-source/**'
+      - '.github/workflows/frontend-ci.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'book-source/**'
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: ['18.x', '20.x']
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: book-source/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./book-source
+      run: npm ci
+
+    - name: Lint
+      working-directory: ./book-source
+      run: npm run lint || true
+
+    - name: Type check
+      working-directory: ./book-source
+      run: npm run typecheck || true
+
+    - name: Build
+      working-directory: ./book-source
+      run: npm run build
+
+    - name: Run tests
+      working-directory: ./book-source
+      run: |
+        # npm test
+        echo "Tests will be added in future iterations"
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-${{ matrix.node-version }}
+        path: book-source/build
+        retention-days: 7

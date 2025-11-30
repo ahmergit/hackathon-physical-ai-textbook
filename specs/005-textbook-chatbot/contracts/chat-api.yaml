@@ -1,0 +1,359 @@
+openapi: 3.1.0
+info:
+  title: Physical AI Textbook Chatbot API
+  description: |
+    API for the RAG-based chatbot that answers questions about the Physical AI textbook.
+    Provides streaming responses grounded strictly in textbook content.
+  version: 1.0.0
+  contact:
+    name: Physical AI Team
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+  - url: https://api.example.com
+    description: Production
+
+tags:
+  - name: chat
+    description: Chat interaction endpoints
+  - name: health
+    description: Health check endpoints
+
+paths:
+  /api/chat:
+    post:
+      operationId: sendChatMessage
+      summary: Send a message and receive a streaming response
+      description: |
+        Send a user message to the chatbot. The response is streamed via Server-Sent Events (SSE).
+        The chatbot retrieves relevant textbook sections before generating a response.
+        All responses are grounded in the textbook content with citations.
+      tags:
+        - chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+            examples:
+              simpleQuestion:
+                summary: Simple question
+                value:
+                  message: "What is physical AI?"
+              withHistory:
+                summary: Question with conversation history
+                value:
+                  message: "Tell me more about that"
+                  conversation_history:
+                    - role: "user"
+                      content: "What is physical AI?"
+                    - role: "assistant"
+                      content: "Physical AI refers to..."
+              withSelection:
+                summary: Question about selected text
+                value:
+                  message: "Explain this in simpler terms"
+                  selected_text: "Embodied cognition suggests that..."
+              quickAction:
+                summary: Quick action request
+                value:
+                  message: "Previous response about humanoid robots"
+                  quick_action: "summarize"
+      responses:
+        '200':
+          description: Streaming response (Server-Sent Events)
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/ChatStreamEvent'
+              examples:
+                streamingResponse:
+                  summary: Example streaming events
+                  value: |
+                    data: {"type": "delta", "content": "Physical"}
+                    
+                    data: {"type": "delta", "content": " AI"}
+                    
+                    data: {"type": "delta", "content": " refers to..."}
+                    
+                    data: {"type": "citation", "citation": {"chapter": "chapter-01", "section": "section-1-1", "title": "Introduction", "url": "/docs/chapter-01/intro", "relevance_score": 0.92}}
+                    
+                    data: {"type": "done", "citations": [...]}
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "validation_error"
+                message: "Message is required"
+        '422':
+          description: Unprocessable content (guardrail triggered)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "out_of_scope"
+                message: "This question is outside the scope of the Physical AI textbook. Try asking about humanoid robotics, embodied intelligence, or other topics covered in the book."
+                suggested_chapters:
+                  - "Chapter 1: Introduction to Physical AI"
+                  - "Chapter 2: Workforce Physical AI"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/chat/clear:
+    post:
+      operationId: clearChat
+      summary: Signal chat session cleared
+      description: |
+        Optional endpoint to signal that the user has cleared their chat.
+        Since chat history is client-side only, this mainly serves for analytics/logging.
+        No server-side session data is deleted (there is none).
+      tags:
+        - chat
+      responses:
+        '204':
+          description: Acknowledged (no content)
+
+  /api/health:
+    get:
+      operationId: healthCheck
+      summary: Check API health
+      description: Returns the health status of the chatbot service and its dependencies.
+      tags:
+        - health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: "healthy"
+                services:
+                  qdrant: "connected"
+                  openai: "connected"
+                timestamp: "2024-11-29T10:30:00Z"
+        '503':
+          description: Service unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: "unhealthy"
+                services:
+                  qdrant: "disconnected"
+                  openai: "connected"
+                timestamp: "2024-11-29T10:30:00Z"
+
+components:
+  schemas:
+    ChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          description: The user's question or message
+          example: "What is physical AI?"
+        conversation_history:
+          type: array
+          maxItems: 50
+          description: Previous messages for context (optional)
+          items:
+            $ref: '#/components/schemas/ConversationMessage'
+        selected_text:
+          type: string
+          maxLength: 5000
+          nullable: true
+          description: Text selected from the textbook page (optional)
+          example: "Embodied cognition is a theory..."
+        quick_action:
+          type: string
+          enum:
+            - explain
+            - summarize
+            - simplify
+          nullable: true
+          description: Quick action to apply to the response
+
+    ConversationMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum:
+            - user
+            - assistant
+          description: Who sent the message
+        content:
+          type: string
+          description: Message content
+
+    ChatStreamEvent:
+      oneOf:
+        - $ref: '#/components/schemas/DeltaEvent'
+        - $ref: '#/components/schemas/CitationEvent'
+        - $ref: '#/components/schemas/DoneEvent'
+        - $ref: '#/components/schemas/StreamErrorEvent'
+      discriminator:
+        propertyName: type
+        mapping:
+          delta: '#/components/schemas/DeltaEvent'
+          citation: '#/components/schemas/CitationEvent'
+          done: '#/components/schemas/DoneEvent'
+          error: '#/components/schemas/StreamErrorEvent'
+
+    DeltaEvent:
+      type: object
+      required:
+        - type
+        - content
+      properties:
+        type:
+          type: string
+          const: delta
+        content:
+          type: string
+          description: Incremental text token
+
+    CitationEvent:
+      type: object
+      required:
+        - type
+        - citation
+      properties:
+        type:
+          type: string
+          const: citation
+        citation:
+          $ref: '#/components/schemas/Citation'
+
+    DoneEvent:
+      type: object
+      required:
+        - type
+        - citations
+      properties:
+        type:
+          type: string
+          const: done
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+
+    StreamErrorEvent:
+      type: object
+      required:
+        - type
+        - message
+        - code
+      properties:
+        type:
+          type: string
+          const: error
+        message:
+          type: string
+        code:
+          type: string
+          enum:
+            - retrieval_failed
+            - generation_failed
+            - timeout
+            - unknown
+
+    Citation:
+      type: object
+      required:
+        - chapter
+        - section
+        - title
+        - url
+        - relevance_score
+      properties:
+        chapter:
+          type: string
+          description: Chapter identifier
+          example: "chapter-01"
+        section:
+          type: string
+          description: Section identifier
+          example: "section-1-2"
+        title:
+          type: string
+          description: Section title
+          example: "What is Embodied Intelligence?"
+        url:
+          type: string
+          format: uri-reference
+          description: Deep link to the textbook page
+          example: "/docs/chapter-01/intro#embodied-intelligence"
+        relevance_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Similarity score from retrieval
+          example: 0.89
+        snippet:
+          type: string
+          description: Brief excerpt from cited content
+          example: "...key principles of embodied cognition..."
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: "validation_error"
+        message:
+          type: string
+          description: Human-readable error message
+        suggested_chapters:
+          type: array
+          items:
+            type: string
+          description: Suggested chapters for out-of-scope questions
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - healthy
+            - unhealthy
+        services:
+          type: object
+          additionalProperties:
+            type: string
+            enum:
+              - connected
+              - disconnected
+        timestamp:
+          type: string
+          format: date-time

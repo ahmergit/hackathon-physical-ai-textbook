@@ -1,0 +1,562 @@
+/**
+ * Custom CSS for Physical AI & Humanoid Robotics
+ * Dark theme optimized for technical documentation
+ */
+
+/* Root CSS Variables - Dark Theme Palette */
+:root {
+  /* Primary colors - Tech blue/teal theme */
+  --ifm-color-primary: #00d4aa;
+  --ifm-color-primary-dark: #00be99;
+  --ifm-color-primary-darker: #00b390;
+  --ifm-color-primary-darkest: #009376;
+  --ifm-color-primary-light: #00eabb;
+  --ifm-color-primary-lighter: #00f5c4;
+  --ifm-color-primary-lightest: #1affdb;
+
+  /* Secondary colors */
+  --ifm-color-secondary: #6c757d;
+
+  /* Typography */
+  --ifm-font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --ifm-font-family-monospace: 'Fira Code', 'Consolas', 'Monaco', monospace;
+  --ifm-code-font-size: 95%;
+  --ifm-line-height-base: 1.65;
+  --ifm-heading-font-weight: 700;
+
+  /* Code highlighting */
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode enhancements */
+[data-theme='dark'] {
+  /* Enhanced dark theme colors */
+  --ifm-color-primary: #00d4aa;
+  --ifm-color-primary-dark: #00be99;
+  --ifm-color-primary-darker: #00b390;
+  --ifm-color-primary-darkest: #009376;
+  --ifm-color-primary-light: #00eabb;
+  --ifm-color-primary-lighter: #00f5c4;
+  --ifm-color-primary-lightest: #1affdb;
+
+  /* Background colors */
+  --ifm-background-color: #1a1a1a;
+  --ifm-background-surface-color: #242424;
+
+  /* Text colors */
+  --ifm-font-color-base: #e0e0e0;
+  --ifm-font-color-secondary: #b0b0b0;
+
+  /* Code highlighting for dark theme */
+  --docusaurus-highlighted-code-line-bg: rgba(0, 212, 170, 0.1);
+}
+
+/* ========================================
+   THREE-COLUMN LAYOUT FOR DOC PAGES
+   ======================================== */
+
+/* Main documentation container */
+.theme-doc-page {
+  display: flex;
+  max-width: 100%;
+}
+
+/* Left sidebar - navigation */
+aside.theme-doc-sidebar-container {
+  width: 250px;
+  flex-shrink: 0;
+}
+
+/* Center content area */
+.theme-doc-markdown {
+  max-width: 900px;
+  flex-grow: 1;
+  padding: 0 2rem;
+}
+
+/* Right TOC (table of contents) */
+.theme-doc-toc-desktop {
+  width: 250px;
+  flex-shrink: 0;
+}
+
+/* Sticky positioning for right TOC */
+.table-of-contents {
+  position: sticky;
+  top: 64px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+
+/* TOC scrollbar styling */
+.table-of-contents::-webkit-scrollbar {
+  width: 6px;
+}
+
+.table-of-contents::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-of-contents::-webkit-scrollbar-thumb {
+  background: var(--ifm-color-primary-dark);
+  border-radius: 3px;
+}
+
+.table-of-contents::-webkit-scrollbar-thumb:hover {
+  background: var(--ifm-color-primary);
+}
+
+/* TOC link styling */
+.table-of-contents__link {
+  color: var(--ifm-font-color-secondary);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  transition: color 0.2s ease;
+}
+
+.table-of-contents__link:hover {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.table-of-contents__link--active {
+  color: var(--ifm-color-primary);
+  font-weight: 600;
+}
+
+/* ========================================
+   RESPONSIVE BREAKPOINTS
+   ======================================== */
+
+/* Tablet: hide right TOC, keep sidebar */
+@media (max-width: 1023px) {
+  .theme-doc-toc-desktop {
+    display: none;
+  }
+
+  .theme-doc-markdown {
+    max-width: 100%;
+  }
+}
+
+/* Mobile: hide both sidebars (handled by hamburger menu) */
+@media (max-width: 767px) {
+  aside.theme-doc-sidebar-container {
+    display: none;
+  }
+
+  .theme-doc-markdown {
+    padding: 0 1rem;
+  }
+}
+
+/* ========================================
+   SIDEBAR NAVIGATION STYLING
+   ======================================== */
+
+/* Sidebar menu items */
+.theme-doc-sidebar-item-link {
+  color: var(--ifm-font-color-secondary);
+  transition: all 0.2s ease;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+}
+
+.theme-doc-sidebar-item-link:hover {
+  background-color: rgba(0, 212, 170, 0.1);
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+/* Active page highlighting */
+.theme-doc-sidebar-item-link-level-1.menu__link--active,
+.theme-doc-sidebar-item-link-level-2.menu__link--active,
+.theme-doc-sidebar-item-link-level-3.menu__link--active {
+  background-color: rgba(0, 212, 170, 0.15);
+  color: var(--ifm-color-primary);
+  font-weight: 600;
+  border-left: 3px solid var(--ifm-color-primary);
+  padding-left: calc(0.75rem - 3px);
+}
+
+/* Sidebar category (collapsible sections) */
+.theme-doc-sidebar-item-category {
+  margin-bottom: 0.5rem;
+}
+
+/* Category label styling */
+.menu__list-item-collapsible .menu__link {
+  font-weight: 600;
+  color: var(--ifm-font-color-base);
+  padding: 0.5rem 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.menu__list-item-collapsible .menu__link:hover {
+  background-color: rgba(0, 212, 170, 0.08);
+  color: var(--ifm-color-primary);
+}
+
+/* Collapsible arrow icons */
+.menu__list-item-collapsible .menu__caret {
+  transition: transform 0.2s ease;
+}
+
+.menu__list-item-collapsible .menu__caret:before {
+  background: var(--ifm-menu-link-sublist-icon) 50% / 1.5rem 1.5rem;
+}
+
+/* Expanded category arrow */
+.menu__list-item-collapsible--active .menu__caret {
+  transform: rotate(90deg);
+}
+
+/* Nested list indentation */
+.menu__list .menu__list {
+  margin-left: 0.75rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  padding-left: 0.5rem;
+}
+
+/* Sidebar scrollbar */
+.theme-doc-sidebar-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.theme-doc-sidebar-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.theme-doc-sidebar-menu::-webkit-scrollbar-thumb {
+  background: var(--ifm-color-primary-dark);
+  border-radius: 3px;
+}
+
+.theme-doc-sidebar-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--ifm-color-primary);
+}
+
+/* ========================================
+   MOBILE NAVIGATION & RESPONSIVENESS
+   ======================================== */
+
+/* Ensure minimum tap target size for touch devices */
+@media (max-width: 767px) {
+  /* Show navbar title on mobile - like image 1 */
+  .navbar__brand .navbar__title {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+  }
+
+  /* Make logo smaller on mobile */
+  .navbar__brand .navbar__logo {
+    height: 24px;
+    width: 24px;
+    margin-right: 8px;
+  }
+
+  /* Compact navbar on mobile - like image 1 */
+  .navbar {
+    padding: 0.75rem 1rem;
+    height: auto;
+    min-height: 56px;
+  }
+
+  /* Navbar inner layout */
+  .navbar__inner {
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+  }
+
+  /* Fix navbar items layout */
+  .navbar__items {
+    gap: 0.75rem;
+  }
+
+  /* Show Book and GitHub links on mobile - like image 1 */
+  .navbar__items--left .navbar__link,
+  .navbar__items--right .navbar__link {
+    display: flex;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.25rem;
+  }
+
+  /* Navbar hamburger menu button */
+  .navbar__toggle {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    order: -1; /* Put hamburger first like image 1 */
+  }
+
+  /* Sidebar menu items - ensure touch-friendly sizes */
+  .menu__link,
+  .menu__list-item-collapsible > .menu__link {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Navbar items */
+  .navbar__item {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Keep breadcrumbs visible on mobile for context - like image 1 */
+  .theme-doc-breadcrumbs {
+    display: block;
+    font-size: 0.8rem;
+    padding: 0.5rem 0;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .breadcrumbs {
+    flex-wrap: nowrap;
+  }
+
+  .breadcrumbs__item {
+    font-size: 0.8rem;
+  }
+
+  /* Compact doc page header */
+  .theme-doc-version-badge,
+  .theme-doc-version-banner {
+    margin-bottom: 0.5rem;
+  }
+
+  /* Hide the logo that appears in doc page content area on mobile */
+  .col--3 .navbar__brand,
+  .docSidebarContainer_node_modules .navbar__brand {
+    display: none;
+  }
+
+  /* TOC links in mobile */
+  .table-of-contents__link {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0;
+  }
+
+  /* Buttons */
+  .button,
+  button,
+  a.button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.75rem 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Prevent horizontal scrolling */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Full width content on mobile */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Responsive images */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Mobile navbar - collapsible */
+  .navbar__items {
+    flex-direction: column;
+  }
+
+  /* Mobile sidebar in hamburger menu */
+  .navbar-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: var(--ifm-background-color);
+    z-index: 9999;
+  }
+
+  .navbar-sidebar__items {
+    padding: 1rem;
+  }
+
+  /* Increase font size for better readability on mobile */
+  html {
+    font-size: 16px;
+  }
+
+  /* Adjust heading sizes for mobile */
+  h1 {
+    font-size: 2rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+  }
+
+  /* Code blocks - horizontal scroll if needed */
+  pre {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Adjust content width for tablets */
+  .theme-doc-markdown {
+    max-width: 100%;
+    padding: 0 1.5rem;
+  }
+
+  /* Ensure tap targets on tablets too */
+  .menu__link {
+    min-height: 40px;
+  }
+}
+
+/* Touch device optimizations (all screen sizes) */
+@media (hover: none) and (pointer: coarse) {
+  /* Remove hover effects on touch devices, use active states */
+  .button:hover,
+  .menu__link:hover,
+  .theme-doc-sidebar-item-link:hover {
+    background-color: initial;
+  }
+
+  .button:active,
+  .menu__link:active,
+  .theme-doc-sidebar-item-link:active {
+    background-color: rgba(0, 212, 170, 0.1);
+  }
+}
+
+/* ========================================
+   SIDEBAR HIERARCHY STYLING
+   ======================================== */
+
+/* Chapter (category) titles - larger, bolder */
+.menu__list-item-collapsible > .menu__link--sublist {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ifm-font-color-base);
+}
+
+/* Lesson (child items) - smaller font */
+.menu__list .menu__list .menu__link {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--ifm-font-color-secondary);
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+}
+
+/* Lesson hover state */
+.menu__list .menu__list .menu__link:hover {
+  color: var(--ifm-color-primary);
+}
+
+/* Active lesson */
+.menu__list .menu__list .menu__link--active {
+  font-weight: 500;
+  color: var(--ifm-color-primary);
+}
+
+/* ========================================
+   EXPERT INSIGHT BLOCKQUOTE STYLING
+   ======================================== */
+
+/* Make all Expert Insight admonitions (tip and info) use dark green color */
+.alert--tip,
+.alert--info {
+  --ifm-alert-background-color: #0f5323;
+  background: linear-gradient(135deg, #0f5323 0%, #0a3d1a 100%) !important;
+  border-color: #1a7f37 !important;
+  color: #e6f4ea;
+}
+
+.alert--tip .admonitionHeading_node_modules-\@docusaurus-theme-classic-lib-theme-Admonition-styles-module,
+.alert--info .admonitionHeading_node_modules-\@docusaurus-theme-classic-lib-theme-Admonition-styles-module,
+.alert--tip [class*="admonitionHeading"],
+.alert--info [class*="admonitionHeading"] {
+  color: #ffffff !important;
+}
+
+.alert--tip svg,
+.alert--info svg {
+  fill: #ffffff !important;
+}
+
+/* Expert Insight green box style */
+blockquote {
+  background: linear-gradient(135deg, #0d5c3f 0%, #0a4a33 100%);
+  border: none;
+  border-left: 4px solid #00d4aa;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  margin: 1.5rem 0;
+  color: #e0e0e0;
+  font-style: normal;
+  position: relative;
+}
+
+/* Expert Insight header styling */
+blockquote strong {
+  display: block;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+
+/* Light bulb icon before Expert Insight */
+blockquote strong::before {
+  content: "💡 ";
+  margin-right: 0.25rem;
+}
+
+/* Expert Insight quote text */
+blockquote p {
+  margin: 0;
+  line-height: 1.7;
+  font-size: 1rem;
+}
+
+/* Expert Insight attribution (em/italic for author name) */
+blockquote em {
+  display: block;
+  margin-top: 0.5rem;
+  color: #b0b0b0;
+  font-size: 0.9rem;
+  font-style: normal;
+}
+
+/* Remove default quotation marks if any */
+blockquote::before,
+blockquote::after {
+  content: none;
+}

@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://physical-ai-robotics.com/schemas/lesson-frontmatter.json",
+  "title": "Lesson Frontmatter Schema",
+  "description": "JSON Schema for validating YAML frontmatter in lesson markdown files",
+  "type": "object",
+  "properties": {
+    "sidebar_position": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 99,
+      "description": "Position of the lesson in the sidebar (1-99)"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 160,
+      "description": "Meta description for SEO (max 160 characters)"
+    },
+    "keywords": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "maxItems": 10,
+      "description": "SEO keywords for the lesson"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "description": "Custom URL slug (kebab-case)"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 80,
+      "description": "Custom title for sidebar (max 80 characters)"
+    },
+    "reading_time": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 30,
+      "description": "Estimated reading time in minutes"
+    },
+    "lesson_number": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 99,
+      "description": "Lesson number within chapter"
+    },
+    "prerequisites": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^lesson-(0[1-9]|[1-9][0-9])$"
+      },
+      "description": "Array of prerequisite lesson IDs"
+    }
+  },
+  "required": ["sidebar_position"],
+  "additionalProperties": false
+}

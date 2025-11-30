@@ -1,0 +1,90 @@
+.summaryContainer {
+  margin: 1.5rem 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.summaryButton {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.summaryButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.summaryButton:active {
+  transform: translateY(0);
+}
+
+.icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.buttonText {
+  flex: 1;
+  text-align: left;
+}
+
+.arrow {
+  font-size: 0.875rem;
+  transition: transform 0.3s ease;
+}
+
+.summaryContent {
+  margin-top: 0.5rem;
+  padding: 1.25rem;
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  animation: slideDown 0.3s ease;
+}
+
+.summaryContent p {
+  margin: 0;
+  line-height: 1.7;
+  color: var(--ifm-font-color-base);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dark mode specific adjustments */
+[data-theme='dark'] .summaryContent {
+  background: var(--ifm-background-surface-color);
+  border-color: var(--ifm-color-emphasis-200);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .summaryButton {
+    padding: 0.75rem 1rem;
+    font-size: 0.9375rem;
+  }
+
+  .summaryContent {
+    padding: 1rem;
+  }
+}

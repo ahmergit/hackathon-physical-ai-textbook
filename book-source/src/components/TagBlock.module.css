@@ -1,0 +1,43 @@
+.tagBlock {
+  padding: 2rem 0;
+  background-color: var(--ifm-background-surface-color);
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--ifm-color-primary);
+  background: rgba(0, 212, 170, 0.1);
+  border: 1px solid rgba(0, 212, 170, 0.3);
+  border-radius: 20px;
+  transition: all 0.2s ease;
+}
+
+.tag:hover {
+  background: rgba(0, 212, 170, 0.15);
+  border-color: rgba(0, 212, 170, 0.5);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .tagBlock {
+    padding: 1.5rem 0;
+  }
+
+  .tag {
+    font-size: 0.85rem;
+    padding: 0.4rem 1rem;
+  }
+}

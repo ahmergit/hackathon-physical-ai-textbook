@@ -1,0 +1,516 @@
+openapi: 3.1.0
+info:
+  title: Physical AI Learning Platform - Authentication API
+  description: |
+    Authentication and authorization endpoints for the Physical AI Learning Platform.
+
+    **Features**:
+    - Email/password registration with email verification
+    - Google OAuth 2.0 authentication
+    - Session management with HTTP-only cookies
+    - JWT tokens (15-minute access, 7-day refresh)
+
+    **Security**:
+    - Passwords hashed with bcrypt
+    - HTTP-only, Secure, SameSite cookies
+    - CSRF protection via SameSite=Lax
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@physicalai.example.com
+
+servers:
+  - url: http://localhost:8000/api
+    description: Development server
+  - url: https://api.physicalai.example.com/api
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User registration, login, and session management
+  - name: Email Verification
+    description: Email verification flow
+  - name: OAuth
+    description: Social authentication (Google)
+
+paths:
+  /auth/register:
+    post:
+      summary: Register new user
+      description: |
+        Create a new user account with email and password. Sends verification email.
+
+        **Flow**:
+        1. Validate email format and password strength
+        2. Hash password with bcrypt
+        3. Create user record (is_verified=false)
+        4. Generate verification token (24-hour expiration)
+        5. Send verification email with clickable link
+        6. Return user data
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              email: user@example.com
+              password: SecurePass123!
+      responses:
+        '201':
+          description: User created successfully (verification email sent)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+              example:
+                id: 550e8400-e29b-41d4-a716-446655440000
+                email: user@example.com
+                is_active: true
+                is_superuser: false
+                is_verified: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/login:
+    post:
+      summary: User login
+      description: |
+        Authenticate user with email and password. Returns session cookie.
+
+        **Requirements**:
+        - Email must be verified (is_verified=true)
+        - Account must be active (is_active=true)
+
+        **Response**:
+        - Sets HTTP-only cookie with JWT access token (15 minutes)
+        - Sets session cookie for refresh (7 days)
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              username: user@example.com
+              password: SecurePass123!
+      responses:
+        '200':
+          description: Login successful
+          headers:
+            Set-Cookie:
+              description: Session cookie with JWT token
+              schema:
+                type: string
+                example: fastapiusersauth=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=604800
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Invalid credentials or unverified email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  summary: Invalid email or password
+                  value:
+                    detail: LOGIN_BAD_CREDENTIALS
+                unverified:
+                  summary: Email not verified
+                  value:
+                    detail: LOGIN_USER_NOT_VERIFIED
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/logout:
+    post:
+      summary: User logout
+      description: |
+        Invalidate current session by clearing session cookie.
+
+        **Security**: Clears cookie on client side. Server-side session invalidation depends on implementation (JWT blacklist or database session deletion).
+      tags:
+        - Authentication
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          headers:
+            Set-Cookie:
+              description: Cookie cleared
+              schema:
+                type: string
+                example: fastapiusersauth=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Logged out successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/me:
+    get:
+      summary: Get current user
+      description: |
+        Retrieve authenticated user's information.
+
+        **Protected**: Requires valid session cookie.
+      tags:
+        - Authentication
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Current user data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/verify:
+    post:
+      summary: Verify email address
+      description: |
+        Validate email verification token and activate account.
+
+        **Flow**:
+        1. Extract token from request body
+        2. Check token exists and not expired (< 24 hours old)
+        3. Set user.is_verified = true
+        4. Mark token as used
+        5. Return success
+      tags:
+        - Email Verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyRequest'
+            example:
+              token: 550e8400-e29b-41d4-a716-446655440001
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidToken:
+                  summary: Token not found
+                  value:
+                    detail: VERIFY_USER_BAD_TOKEN
+                expiredToken:
+                  summary: Token expired
+                  value:
+                    detail: VERIFY_USER_TOKEN_EXPIRED
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/request-verify-token:
+    post:
+      summary: Resend verification email
+      description: |
+        Generate new verification token and send email. Invalidates previous tokens.
+
+        **Rate Limiting**: Maximum 3 requests per hour per email address.
+      tags:
+        - Email Verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+            example:
+              email: user@example.com
+      responses:
+        '202':
+          description: Verification email sent (if account exists and unverified)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Verification email sent. Please check your inbox.
+        '400':
+          description: Email already verified or account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: VERIFY_USER_ALREADY_VERIFIED
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: RATE_LIMIT_EXCEEDED
+
+  /auth/google/authorize:
+    get:
+      summary: Initiate Google OAuth flow
+      description: |
+        Redirect to Google OAuth consent screen.
+
+        **Flow**:
+        1. Generate OAuth state parameter (CSRF protection)
+        2. Redirect to Google authorization URL
+        3. User grants permissions on Google's site
+        4. Google redirects to /auth/google/callback with code
+      tags:
+        - OAuth
+      responses:
+        '302':
+          description: Redirect to Google OAuth consent screen
+          headers:
+            Location:
+              schema:
+                type: string
+                example: https://accounts.google.com/o/oauth2/v2/auth?client_id=...&redirect_uri=...&scope=email+profile
+
+  /auth/google/callback:
+    get:
+      summary: Google OAuth callback
+      description: |
+        Handle OAuth callback from Google. Exchanges authorization code for tokens.
+
+        **Flow**:
+        1. Validate state parameter (CSRF check)
+        2. Exchange authorization code for access token
+        3. Fetch user info from Google (email, name, sub)
+        4. Check if user exists by email
+        5. If new user: Create account with is_verified=true
+        6. If existing user: Link OAuth account
+        7. Create session and set cookie
+        8. Redirect to frontend (onboarding if new, dashboard if returning)
+      tags:
+        - OAuth
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Authorization code from Google
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+          description: State parameter for CSRF protection
+      responses:
+        '302':
+          description: Redirect to frontend with session cookie
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+            Location:
+              schema:
+                type: string
+                example: https://physicalai.example.com/onboarding
+        '400':
+          description: OAuth error (invalid code, state mismatch, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: fastapiusersauth
+      description: HTTP-only cookie containing JWT access token
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+          description: User email address (RFC 5321 max length)
+          example: user@example.com
+        password:
+          type: string
+          minLength: 8
+          maxLength: 100
+          description: Password (min 8 chars, must include uppercase, lowercase, number)
+          example: SecurePass123!
+
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          format: email
+          description: Email address (FastAPI-Users uses 'username' key for email)
+          example: user@example.com
+        password:
+          type: string
+          description: User password
+          example: SecurePass123!
+
+    VerifyRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          format: uuid
+          description: Email verification token (UUID v4)
+          example: 550e8400-e29b-41d4-a716-446655440001
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: User unique identifier
+          example: 550e8400-e29b-41d4-a716-446655440000
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: user@example.com
+        is_active:
+          type: boolean
+          description: Account active status
+          example: true
+        is_superuser:
+          type: boolean
+          description: Admin privileges flag
+          example: false
+        is_verified:
+          type: boolean
+          description: Email verification status
+          example: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          oneOf:
+            - type: string
+            - type: object
+          description: Error message or structured error object
+          example: Invalid credentials
+
+    ValidationError:
+      type: object
+      properties:
+        detail:
+          type: array
+          items:
+            type: object
+            properties:
+              loc:
+                type: array
+                items:
+                  type: string
+                description: Field location (e.g., ["body", "email"])
+              msg:
+                type: string
+                description: Error message
+              type:
+                type: string
+                description: Error type
+
+  responses:
+    BadRequest:
+      description: Bad request (invalid input or business logic error)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            detail: Email already registered
+
+    Unauthorized:
+      description: Unauthorized (missing or invalid session)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            detail: Not authenticated
+
+    ValidationError:
+      description: Validation error (Pydantic schema validation failed)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+          example:
+            detail:
+              - loc: ["body", "email"]
+                msg: value is not a valid email address
+                type: value_error.email
+              - loc: ["body", "password"]
+                msg: ensure this value has at least 8 characters
+                type: value_error.any_str.min_length
+
+  examples:
+    UserCreated:
+      summary: User successfully created
+      value:
+        id: 550e8400-e29b-41d4-a716-446655440000
+        email: user@example.com
+        is_active: true
+        is_superuser: false
+        is_verified: false
+
+    UserVerified:
+      summary: User with verified email
+      value:
+        id: 550e8400-e29b-41d4-a716-446655440000
+        email: user@example.com
+        is_active: true
+        is_superuser: false
+        is_verified: true

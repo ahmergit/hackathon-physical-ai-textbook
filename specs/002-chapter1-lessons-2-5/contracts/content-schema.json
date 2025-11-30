@@ -1,0 +1,141 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Lesson Content Schema",
+  "description": "Schema for Chapter 1 Lessons 2-5 MDX content structure",
+  "type": "object",
+  "required": ["frontmatter", "content"],
+  "properties": {
+    "frontmatter": {
+      "type": "object",
+      "required": ["sidebar_position", "title", "description", "keywords", "slug"],
+      "properties": {
+        "sidebar_position": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "title": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 100
+        },
+        "description": {
+          "type": "string",
+          "minLength": 100,
+          "maxLength": 200
+        },
+        "keywords": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 3,
+          "maxItems": 10
+        },
+        "slug": {
+          "type": "string",
+          "pattern": "^/part-01/chapter-01/lesson-0[2-5]$"
+        }
+      }
+    },
+    "content": {
+      "type": "object",
+      "required": ["overview", "mainSections", "conclusion", "keyTakeaways"],
+      "properties": {
+        "overview": {
+          "type": "string",
+          "minLength": 100,
+          "maxLength": 300
+        },
+        "mainSections": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/MainSection" },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "conclusion": {
+          "type": "string",
+          "minLength": 50,
+          "maxLength": 200
+        },
+        "keyTakeaways": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 4,
+          "maxItems": 6
+        }
+      }
+    }
+  },
+  "definitions": {
+    "MainSection": {
+      "type": "object",
+      "required": ["title", "subsections"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 60
+        },
+        "introduction": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "subsections": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Subsection" },
+          "minItems": 3,
+          "maxItems": 3
+        }
+      }
+    },
+    "Subsection": {
+      "type": "object",
+      "required": ["title", "content", "expertInsight"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 50
+        },
+        "content": {
+          "type": "string",
+          "minLength": 300,
+          "maxLength": 800,
+          "description": "Main content: 100-150 words"
+        },
+        "expertInsight": {
+          "$ref": "#/definitions/ExpertInsight"
+        }
+      }
+    },
+    "ExpertInsight": {
+      "type": "object",
+      "required": ["topic", "context"],
+      "properties": {
+        "topic": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 40
+        },
+        "quote": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "attribution": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "context": {
+          "type": "string",
+          "minLength": 200,
+          "maxLength": 600,
+          "description": "Context paragraph: 80-120 words"
+        },
+        "references": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 5
+        }
+      }
+    }
+  }
+}

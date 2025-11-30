@@ -1,0 +1,2 @@
+book-cover-placeholder
+Place 300x400px book cover image here as book-cover.png

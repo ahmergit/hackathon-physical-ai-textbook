@@ -1,0 +1,44 @@
+# Docusaurus (in book-source directory)
+book-source/node_modules/
+book-source/build/
+book-source/.docusaurus/
+book-source/.cache/
+
+# Backend Python
+backend/.venv/
+backend/__pycache__/
+backend/.pytest_cache/
+backend/htmlcov/
+backend/.coverage
+backend/*.db
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
+
+# Misc
+.DS_Store
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class

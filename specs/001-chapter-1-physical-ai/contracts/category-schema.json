@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://physical-ai-robotics.com/schemas/category-config.json",
+  "title": "Category Configuration Schema",
+  "description": "JSON Schema for validating _category_.json files used by Docusaurus",
+  "type": "object",
+  "properties": {
+    "label": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "Human-readable label for the category (max 80 characters)"
+    },
+    "position": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 99,
+      "description": "Position in sidebar (1-99, must be unique within parent)"
+    },
+    "collapsible": {
+      "type": "boolean",
+      "description": "Whether the category can be collapsed"
+    },
+    "collapsed": {
+      "type": "boolean",
+      "description": "Default collapsed state"
+    },
+    "link": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["generated-index", "doc"],
+          "description": "Link type for category"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Description for generated index pages (max 200 characters)"
+        },
+        "id": {
+          "type": "string",
+          "description": "Document ID for type='doc'"
+        }
+      },
+      "required": ["type"],
+      "additionalProperties": false
+    },
+    "className": {
+      "type": "string",
+      "description": "Custom CSS class name for styling"
+    },
+    "collapsedLabel": {
+      "type": "string",
+      "maxLength": 80,
+      "description": "Custom label for collapsed state"
+    }
+  },
+  "required": ["label", "position", "collapsible", "collapsed"],
+  "additionalProperties": false
+}
