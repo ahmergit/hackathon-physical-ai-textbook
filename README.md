@@ -65,7 +65,8 @@ physical-ai-humaniod-robotics/
 
 ### 🤖 AI Assistant Chatbot
 - **Context-Aware Responses** - Answers questions using textbook content
-- **RAG Architecture** - Powered by OpenAI GPT-4 and Qdrant vector database
+- **RAG Architecture** - Powered by OpenAI GPT-4o and Qdrant vector database
+- **OpenAI Agents SDK** - Intelligent agent orchestration
 - **Streaming Responses** - Real-time response generation
 - **Text Selection** - Select text and ask the AI about it
 
@@ -255,9 +256,9 @@ npx playwright test
 - **Pydantic** - Data validation
 
 ### AI/ML
-- **OpenAI GPT-4** - Language model
-- **Qdrant** - Vector database
-- **LangChain** - LLM orchestration
+- **OpenAI GPT-4o** - Language model for chat
+- **OpenAI Agents SDK** - Agent orchestration
+- **Qdrant** - Vector database for RAG
 
 ### Infrastructure
 - **SQLite** - Database (development)
