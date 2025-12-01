@@ -26,14 +26,14 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
 
-    # SendGrid Email Service
-    sendgrid_api_key: str
-    from_email: EmailStr
+    # SendGrid Email Service (optional)
+    sendgrid_api_key: str = ""
+    from_email: str = "noreply@example.com"
     from_name: str = "Physical AI Learning Platform"
 
-    # Google OAuth
-    google_client_id: str
-    google_client_secret: str
+    # Google OAuth (optional)
+    google_client_id: str = ""
+    google_client_secret: str = ""
 
     # Frontend URLs
     frontend_url: str = "http://localhost:3000"

@@ -54,6 +54,13 @@ jobs:
 
     - name: Run tests
       working-directory: ./backend
+      env:
+        DATABASE_URL: sqlite+aiosqlite:///./test.db
+        SECRET_KEY: test-secret-key-for-ci-only
+        OPENAI_API_KEY: sk-test-key
+        QDRANT_URL: http://localhost:6333
+        QDRANT_API_KEY: test-key
+        ENVIRONMENT: testing
       run: |
         # pytest tests/ --cov=src --cov-report=xml --cov-report=term
         echo "Tests will be added in future iterations"
@@ -79,5 +86,19 @@ jobs:
         docker build -t physical-ai-auth:${{ github.sha }} .
 
     - name: Test Docker image
+      env:
+        DATABASE_URL: sqlite+aiosqlite:///./test.db
+        SECRET_KEY: test-secret-key-for-ci-only
+        OPENAI_API_KEY: sk-test-key
+        QDRANT_URL: http://localhost:6333
+        QDRANT_API_KEY: test-key
+        ENVIRONMENT: testing
       run: |
-        docker run --rm physical-ai-auth:${{ github.sha }} python -c "import src.main; print('Import successful')"
+        docker run --rm \
+          -e DATABASE_URL="$DATABASE_URL" \
+          -e SECRET_KEY="$SECRET_KEY" \
+          -e OPENAI_API_KEY="$OPENAI_API_KEY" \
+          -e QDRANT_URL="$QDRANT_URL" \
+          -e QDRANT_API_KEY="$QDRANT_API_KEY" \
+          -e ENVIRONMENT="$ENVIRONMENT" \
+          physical-ai-auth:${{ github.sha }} python -c "import src.main; print('Import successful')"

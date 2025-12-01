@@ -112,6 +112,10 @@ async def google_callback(
             if not user.name and google_name:
                 user.name = google_name
                 await session.commit()
+                await session.refresh(user)
+            else:
+                # Explicit commit to avoid ROLLBACK log noise
+                await session.commit()
             logger.info(f"Google OAuth: Found existing user {email}")
         
         # Generate JWT token

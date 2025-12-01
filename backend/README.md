@@ -1,212 +1,249 @@
-# Physical AI Learning Platform - Auth Backend
+# 🤖 Physical AI Textbook - Backend API
 
-FastAPI-based authentication, onboarding, and email verification system for the Physical AI Learning Platform.
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688.svg)](https://fastapi.tiangolo.com/)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB.svg)](https://www.python.org/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-Agents_SDK-412991.svg)](https://openai.com/)
+[![Qdrant](https://img.shields.io/badge/Qdrant-Vector_DB-FF6B6B.svg)](https://qdrant.tech/)
 
-## Features
+> **Backend API for the Physical AI & Humanoid Robotics Interactive Textbook — featuring AI-powered chatbot with RAG, user authentication, and profile management.**
 
-- **Email/Password Authentication**: Secure user registration and login with FastAPI-Users
-- **Email Verification**: SendGrid-powered verification emails with 24-hour expiration
-- **Google OAuth 2.0**: Single sign-on with Google accounts
-- **Session Management**: HTTP-only cookies with 15-minute JWT access tokens and 7-day refresh tokens
-- **User Profiles**: Capture robotics/programming experience, AI/ML background, and learning goals
-- **Async SQLAlchemy**: High-performance database operations with PostgreSQL
+---
 
-## Tech Stack
+## ✨ Features
 
-- **Python 3.13**: Latest Python with modern async/await patterns
-- **FastAPI 0.104**: Modern web framework with automatic OpenAPI docs
-- **FastAPI-Users 13.0**: Complete authentication solution with email + OAuth
-- **SQLAlchemy 2.0**: Modern ORM with async support
-- **Alembic**: Database migration management
-- **Pydantic v2**: Data validation and settings management
-- **SendGrid**: Transactional email service
-- **PostgreSQL**: Production database (asyncpg driver)
+### 🤖 AI Chatbot
+- **RAG Architecture** - Retrieval-Augmented Generation using textbook content
+- **OpenAI GPT-4o** - Advanced language model for intelligent responses
+- **OpenAI Agents SDK** - Agent orchestration for complex queries
+- **Qdrant Vector Database** - Semantic search over textbook embeddings
+- **Streaming Responses** - Real-time SSE streaming for chat
 
-## Quick Start
+### 🔐 Authentication System
+- **Email/Password Auth** - Secure registration with email verification
+- **Google OAuth 2.0** - Single sign-on with Google accounts
+- **JWT Tokens** - Secure session management with refresh tokens
+- **Rate Limiting** - API protection against abuse
 
-### 1. Prerequisites
+### 👤 User Profiles
+- **Onboarding Flow** - Capture user experience and learning goals
+- **Experience Levels** - Track robotics, programming, and AI/ML background
+- **Personalization** - Customize content based on user profile
 
-- Python 3.13+
-- PostgreSQL (or use Neon Serverless)
-- SendGrid account (for email verification)
-- Google Cloud Console project (for OAuth)
+---
 
-### 2. Installation
-
-```bash
-# Install dependencies with uv
-uv add fastapi uvicorn[standard] fastapi-users[sqlalchemy,oauth] \
-  httpx-oauth sqlalchemy alembic asyncpg sendgrid pydantic[email] \
-  pydantic-settings python-jose[cryptography] passlib[bcrypt]
-
-# Or with pip
-pip install -r requirements.txt
-```
-
-### 3. Environment Setup
-
-```bash
-# Copy example environment file
-cp .env.example .env
-
-# Edit .env and set your values:
-# - DATABASE_URL: PostgreSQL connection string
-# - SECRET_KEY: Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
-# - SENDGRID_API_KEY: From SendGrid dashboard
-# - GOOGLE_CLIENT_ID/SECRET: From Google Cloud Console
-```
-
-### 4. Database Setup
-
-```bash
-# Create database (if using local PostgreSQL)
-createdb physicalai_dev
-
-# Run migrations
-alembic upgrade head
-```
-
-### 5. Run Development Server
-
-```bash
-# Using uvicorn directly
-uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
-
-# Or with environment variables
-DATABASE_URL=postgresql+asyncpg://user:pass@localhost/physicalai_dev \
-SECRET_KEY=your-secret-key \
-uvicorn src.main:app --reload
-```
-
-### 6. Verify Installation
-
-Visit http://localhost:8000/docs to see the interactive API documentation.
-
-Test the health endpoint:
-```bash
-curl http://localhost:8000/health
-```
-
-## Project Structure
+## 🏗️ Project Structure
 
 ```
 backend/
 ├── src/
-│   ├── main.py              # FastAPI application
+│   ├── main.py              # FastAPI application entry point
 │   ├── config.py            # Settings and configuration
 │   ├── database.py          # SQLAlchemy async engine
-│   ├── models/              # Database models
-│   ├── schemas/             # Pydantic schemas
+│   ├── chatbot/             # AI chatbot with RAG
+│   │   ├── agent.py         # OpenAI Agents SDK integration
+│   │   ├── qdrant_client.py # Vector database client
+│   │   └── prompts.py       # System prompts
+│   ├── models/              # SQLAlchemy database models
+│   ├── schemas/             # Pydantic validation schemas
 │   ├── routers/             # API route handlers
-│   ├── services/            # Business logic
-│   ├── dependencies/        # FastAPI dependencies
+│   │   ├── auth.py          # Authentication endpoints
+│   │   ├── oauth.py         # Google OAuth endpoints
+│   │   ├── profile.py       # User profile endpoints
+│   │   └── chat.py          # Chatbot endpoints
+│   ├── services/            # Business logic layer
 │   └── utils/               # Utility functions
 ├── alembic/                 # Database migrations
-│   ├── versions/            # Migration files
-│   └── env.py               # Alembic config
+├── scripts/                 # Data ingestion scripts
 ├── tests/                   # Test suite
 ├── requirements.txt         # Python dependencies
-├── pyproject.toml          # Project metadata & tools
-└── .env.example            # Environment template
+├── build.sh                 # Render build script
+└── runtime.txt              # Python version for deployment
 ```
 
-## API Endpoints
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Python 3.11+**
+- **uv** (recommended) or pip
+- **PostgreSQL** (production) or SQLite (development)
+
+### 1️⃣ Clone & Install
+
+```bash
+git clone https://github.com/ahmergit/physical-ai-textbook-backend.git
+cd physical-ai-textbook-backend
+
+# Create virtual environment
+uv venv
+source .venv/bin/activate  # Linux/Mac
+# or: .venv\Scripts\activate  # Windows
+
+# Install dependencies
+uv pip install -r requirements.txt
+```
+
+### 2️⃣ Environment Setup
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your credentials:
+
+```env
+# Database
+DATABASE_URL=sqlite:///./physical_ai.db
+
+# JWT Authentication
+JWT_SECRET_KEY=your-secret-key-here
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# OpenAI (for chatbot)
+OPENAI_API_KEY=sk-your-openai-key
+
+# Qdrant (vector database)
+QDRANT_URL=https://your-qdrant-instance.cloud
+QDRANT_API_KEY=your-qdrant-api-key
+QDRANT_COLLECTION_NAME=physical-ai-textbook
+
+# Google OAuth (optional)
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# CORS
+CORS_ORIGINS=http://localhost:3000
+```
+
+### 3️⃣ Database Setup
+
+```bash
+# Run migrations
+uv run alembic upgrade head
+```
+
+### 4️⃣ Start Server
+
+```bash
+uv run uvicorn src.main:app --reload --port 8000
+```
+
+### 5️⃣ Verify Installation
+
+- **API Docs**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
+
+---
+
+## 📡 API Endpoints
 
 ### Authentication
-- `POST /auth/register` - Create new account with email/password
-- `POST /auth/login` - Login with credentials
-- `POST /auth/logout` - Logout and invalidate tokens
-- `GET /auth/me` - Get current user info
-- `POST /auth/verify` - Verify email with token
-- `POST /auth/forgot-password` - Request password reset
-- `POST /auth/reset-password` - Reset password with token
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | Register new user |
+| POST | `/api/auth/login` | Login with credentials |
+| POST | `/api/auth/logout` | Logout user |
+| GET | `/api/auth/me` | Get current user |
+| POST | `/api/auth/verify` | Verify email token |
 
 ### OAuth
-- `GET /auth/google` - Initiate Google OAuth flow
-- `GET /auth/google/callback` - Handle OAuth callback
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/auth/google` | Initiate Google OAuth |
+| GET | `/api/auth/google/callback` | OAuth callback |
 
 ### Profile
-- `GET /profile` - Get user profile
-- `POST /profile` - Create/update profile with onboarding data
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/profile` | Get user profile |
+| POST | `/api/profile` | Create profile |
+| PUT | `/api/profile` | Update profile |
+
+### Chat
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/chat` | Send message (SSE streaming) |
+| GET | `/api/chat/health` | Chatbot health check |
 
 ### Health
-- `GET /health` - Service health check
-- `GET /` - API information
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Service health check |
+| GET | `/` | API information |
 
-## Development
+---
 
-### Run Tests
-
-```bash
-pytest
-```
-
-### Type Checking
+## 🧪 Testing
 
 ```bash
-mypy src/
+# Run all tests
+uv run pytest
+
+# With coverage
+uv run pytest --cov=src --cov-report=html
+
+# View coverage report
+open htmlcov/index.html
 ```
 
-### Code Formatting
+---
 
-```bash
-black src/
-```
+## 🚢 Deployment (Render)
 
-### Linting
+### Option 1: Blueprint Deploy
 
-```bash
-ruff check src/
-```
+Click the button below to deploy to Render:
 
-### Create Migration
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 
-```bash
-alembic revision --autogenerate -m "description"
-alembic upgrade head
-```
+### Option 2: Manual Deploy
 
-## Configuration
+1. Create a new **Web Service** on Render
+2. Connect this repository
+3. Configure:
+   - **Build Command**: `chmod +x build.sh && ./build.sh`
+   - **Start Command**: `uvicorn src.main:app --host 0.0.0.0 --port $PORT`
+4. Add environment variables (see `.env.example`)
 
-All configuration is managed through environment variables (see `.env.example`):
+---
 
-- **Database**: `DATABASE_URL`
-- **Security**: `SECRET_KEY`, token expiration times
-- **Email**: SendGrid API key and sender details
-- **OAuth**: Google client credentials
-- **CORS**: Frontend URL for cross-origin requests
+## 🛠️ Tech Stack
 
-## Security Features
+| Category | Technology |
+|----------|------------|
+| **Framework** | FastAPI 0.115 |
+| **Language** | Python 3.11+ |
+| **ORM** | SQLAlchemy 2.0 |
+| **Migrations** | Alembic |
+| **Validation** | Pydantic 2.x |
+| **AI Model** | OpenAI GPT-4o |
+| **Agent SDK** | OpenAI Agents SDK |
+| **Vector DB** | Qdrant Cloud |
+| **Auth** | FastAPI-Users, JWT |
+| **OAuth** | Google OAuth 2.0 |
 
-- Passwords hashed with bcrypt
-- HTTP-only cookies prevent XSS attacks
-- JWT tokens with short expiration
-- Email verification required before full access
-- OAuth 2.0 state parameter prevents CSRF
-- CORS configured for frontend origin only
-- SQL injection protection via SQLAlchemy ORM
+---
 
-## Database Schema
+## 📚 Related
 
-### Users
-- Core authentication data (email, hashed password)
-- Email verification status and timestamps
-- Active/inactive status
+- **Frontend**: [hackathon-physical-ai-textbook](https://github.com/ahmergit/hackathon-physical-ai-textbook)
+- **Live Site**: [ahmergit.github.io/hackathon-physical-ai-textbook](https://ahmergit.github.io/hackathon-physical-ai-textbook/)
 
-### OAuth Accounts
-- Linked Google accounts
-- OAuth provider details
+---
 
-### Profiles
-- Robotics and programming experience levels
-- AI/ML background
-- Learning goals and preferences
+## 📄 License
 
-### Email Verifications
-- UUID tokens for email verification
-- 24-hour expiration
-- One-time use tokens
+MIT License - see [LICENSE](LICENSE) for details.
 
-## License
+---
 
-MIT
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
