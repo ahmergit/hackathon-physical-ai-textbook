@@ -3,10 +3,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Docusaurus](https://img.shields.io/badge/Docusaurus-3.9-green.svg)](https://docusaurus.io/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-teal.svg)](https://fastapi.tiangolo.com/)
-[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 
 > **An interactive online textbook exploring the frontier where artificial intelligence meets physical embodiment — from fundamentals to advanced applications.**
+
+![Physical AI Textbook](book-source/static/img/book-cover.png)
 
 ---
 
@@ -114,7 +116,7 @@ physical-ai-humaniod-robotics/
 ### Prerequisites
 
 - **Node.js** 20+
-- **Python** 3.11+
+- **Python** 3.12+
 - **uv** (Python package manager) - `pip install uv`
 
 ### 1️⃣ Clone the Repository
