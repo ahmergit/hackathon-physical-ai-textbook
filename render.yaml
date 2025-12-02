@@ -2,6 +2,45 @@
 # https://render.com/docs/yaml-spec
 
 services:
+  # Better Auth TypeScript Service (handles authentication)
+  - type: web
+    name: physical-ai-auth-service
+    runtime: node
+    region: oregon
+    plan: free
+    branch: main
+    rootDir: backend/auth-ts
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "18"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: AUTH_SERVICE_URL
+        fromService:
+          type: web
+          name: physical-ai-auth-service
+          property: host
+      - key: FRONTEND_URL
+        value: "https://ahmergit.github.io"
+      - key: BACKEND_URL
+        fromService:
+          type: web
+          name: physical-ai-backend
+          property: host
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+
+  # FastAPI Backend (handles RAG/chatbot, profile management)
   - type: web
     name: physical-ai-backend
     runtime: python
@@ -17,7 +56,12 @@ services:
         value: "3.11"
       - key: DATABASE_URL
         sync: false
-      - key: JWT_SECRET_KEY
+      - key: JWT_SECRET
+        fromService:
+          type: web
+          name: physical-ai-auth-service
+          envVarKey: JWT_SECRET
+      - key: SECRET_KEY
         generateValue: true
       - key: OPENAI_API_KEY
         sync: false

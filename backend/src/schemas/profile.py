@@ -1,5 +1,6 @@
 """
 Pydantic schemas for Profile model.
+Updated for Better Auth integration.
 """
 
 from datetime import datetime
@@ -8,35 +9,46 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from ..models.profile import ExperienceLevel
+from ..models.profile import SkillLevel, DeviceType
 
 
 class ProfileCreate(BaseModel):
     """
-    Schema for creating user profiles.
-    Used during onboarding process.
+    Schema for creating user profiles (onboarding).
+
+    Required fields:
+    - hardware_skill: Hardware/robotics experience level
+    - programming_skill: Programming experience level
+    - ai_ml_skill: AI/ML experience level
+    - current_device: Current device/setup type
     """
 
-    ai_agents_experience: ExperienceLevel
-    robotics_hardware_experience: ExperienceLevel
+    hardware_skill: SkillLevel
+    programming_skill: SkillLevel
+    ai_ml_skill: SkillLevel
+    current_device: DeviceType
 
 
 class ProfileUpdate(BaseModel):
-    """Schema for updating profile data."""
+    """Schema for updating profile data (all fields optional)."""
 
-    ai_agents_experience: Optional[ExperienceLevel] = None
-    robotics_hardware_experience: Optional[ExperienceLevel] = None
+    hardware_skill: Optional[SkillLevel] = None
+    programming_skill: Optional[SkillLevel] = None
+    ai_ml_skill: Optional[SkillLevel] = None
+    current_device: Optional[DeviceType] = None
 
 
 class ProfileRead(BaseModel):
     """
-    Schema for reading profile data (responses).
+    Schema for reading profile data (API responses).
     """
 
     id: UUID
     user_id: UUID
-    ai_agents_experience: ExperienceLevel
-    robotics_hardware_experience: ExperienceLevel
+    hardware_skill: SkillLevel
+    programming_skill: SkillLevel
+    ai_ml_skill: SkillLevel
+    current_device: DeviceType
     created_at: datetime
     updated_at: datetime
 

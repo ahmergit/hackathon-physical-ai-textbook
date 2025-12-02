@@ -7,14 +7,16 @@ import Layout from '@theme/Layout';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { profileAPI, ExperienceLevel } from '../services/api';
+import { profileAPI, SkillLevel, DeviceType } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './auth.module.css';
 
-// Validation schema - simplified to 2 questions
+// Validation schema - 4 fields for Better Auth migration
 const onboardingSchema = z.object({
-  ai_agents_experience: z.nativeEnum(ExperienceLevel),
-  robotics_hardware_experience: z.nativeEnum(ExperienceLevel),
+  hardware_skill: z.nativeEnum(SkillLevel),
+  programming_skill: z.nativeEnum(SkillLevel),
+  ai_ml_skill: z.nativeEnum(SkillLevel),
+  current_device: z.nativeEnum(DeviceType),
 });
 
 type OnboardingFormData = z.infer<typeof onboardingSchema>;
@@ -32,8 +34,10 @@ export default function Onboarding(): JSX.Element {
   } = useForm<OnboardingFormData>({
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
-      ai_agents_experience: ExperienceLevel.BEGINNER,
-      robotics_hardware_experience: ExperienceLevel.BEGINNER,
+      hardware_skill: SkillLevel.BEGINNER,
+      programming_skill: SkillLevel.BEGINNER,
+      ai_ml_skill: SkillLevel.BEGINNER,
+      current_device: DeviceType.CLOUD_LAPTOP,
     },
   });
 
@@ -108,46 +112,86 @@ export default function Onboarding(): JSX.Element {
         <div className={styles.authCard} style={{ maxWidth: '500px' }}>
           <h1>Welcome!</h1>
           <p className={styles.subtitle}>
-            Tell us about your experience level
+            Tell us about your experience and setup
           </p>
 
           <form onSubmit={handleSubmit(onSubmit)} className={styles.authForm}>
             <div className={styles.formGroup}>
-              <label htmlFor="ai_agents_experience">
-                AI Agents Development Experience *
+              <label htmlFor="hardware_skill">
+                Hardware/Robotics Experience *
               </label>
               <select
-                id="ai_agents_experience"
-                {...register('ai_agents_experience')}
-                className={errors.ai_agents_experience ? styles.inputError : ''}
+                id="hardware_skill"
+                {...register('hardware_skill')}
+                className={errors.hardware_skill ? styles.inputError : ''}
               >
-                <option value={ExperienceLevel.BEGINNER}>Beginner</option>
-                <option value={ExperienceLevel.INTERMEDIATE}>Intermediate</option>
-                <option value={ExperienceLevel.ADVANCED}>Advanced</option>
+                <option value={SkillLevel.BEGINNER}>Beginner</option>
+                <option value={SkillLevel.INTERMEDIATE}>Intermediate</option>
+                <option value={SkillLevel.EXPERT}>Expert</option>
               </select>
-              {errors.ai_agents_experience && (
+              {errors.hardware_skill && (
                 <span className={styles.errorText}>
-                  {errors.ai_agents_experience.message}
+                  {errors.hardware_skill.message}
                 </span>
               )}
             </div>
 
             <div className={styles.formGroup}>
-              <label htmlFor="robotics_hardware_experience">
-                Robotics / Hardware Experience *
+              <label htmlFor="programming_skill">
+                Programming Experience *
               </label>
               <select
-                id="robotics_hardware_experience"
-                {...register('robotics_hardware_experience')}
-                className={errors.robotics_hardware_experience ? styles.inputError : ''}
+                id="programming_skill"
+                {...register('programming_skill')}
+                className={errors.programming_skill ? styles.inputError : ''}
               >
-                <option value={ExperienceLevel.BEGINNER}>Beginner</option>
-                <option value={ExperienceLevel.INTERMEDIATE}>Intermediate</option>
-                <option value={ExperienceLevel.ADVANCED}>Advanced</option>
+                <option value={SkillLevel.BEGINNER}>Beginner</option>
+                <option value={SkillLevel.INTERMEDIATE}>Intermediate</option>
+                <option value={SkillLevel.EXPERT}>Expert</option>
               </select>
-              {errors.robotics_hardware_experience && (
+              {errors.programming_skill && (
                 <span className={styles.errorText}>
-                  {errors.robotics_hardware_experience.message}
+                  {errors.programming_skill.message}
+                </span>
+              )}
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="ai_ml_skill">
+                AI/ML Experience *
+              </label>
+              <select
+                id="ai_ml_skill"
+                {...register('ai_ml_skill')}
+                className={errors.ai_ml_skill ? styles.inputError : ''}
+              >
+                <option value={SkillLevel.BEGINNER}>Beginner</option>
+                <option value={SkillLevel.INTERMEDIATE}>Intermediate</option>
+                <option value={SkillLevel.EXPERT}>Expert</option>
+              </select>
+              {errors.ai_ml_skill && (
+                <span className={styles.errorText}>
+                  {errors.ai_ml_skill.message}
+                </span>
+              )}
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="current_device">
+                Current Device/Setup *
+              </label>
+              <select
+                id="current_device"
+                {...register('current_device')}
+                className={errors.current_device ? styles.inputError : ''}
+              >
+                <option value={DeviceType.CLOUD_LAPTOP}>Cloud/Laptop (No GPU)</option>
+                <option value={DeviceType.RTX_GPU}>RTX GPU Workstation</option>
+                <option value={DeviceType.PHYSICAL_ROBOT}>Physical Robot</option>
+              </select>
+              {errors.current_device && (
+                <span className={styles.errorText}>
+                  {errors.current_device.message}
                 </span>
               )}
             </div>

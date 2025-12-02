@@ -5,7 +5,7 @@ import styles from './NavbarAuth.module.css';
 type ModalMode = 'signup' | 'login';
 
 export default function NavbarAuth() {
-  const { user, isLoading, login, signup, logout } = useAuth();
+  const { user, isLoading, loginWithEmail, signupWithEmail, loginWithGoogle, logout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>('signup');
@@ -75,31 +75,19 @@ export default function NavbarAuth() {
         if (!name.trim()) {
           throw new Error('Name is required');
         }
-        // Client-side password validation
+        // Client-side password validation (Better Auth enforces min 8 chars)
         if (password.length < 8) {
           throw new Error('Password must be at least 8 characters');
         }
-        if (!/[A-Z]/.test(password)) {
-          throw new Error('Password must contain at least one uppercase letter');
-        }
-        if (!/[a-z]/.test(password)) {
-          throw new Error('Password must contain at least one lowercase letter');
-        }
-        if (!/[0-9]/.test(password)) {
-          throw new Error('Password must contain at least one number');
-        }
-        await signup(name, email, password);
+        await signupWithEmail(name, email, password);
         setShowModal(false);
         resetForm();
-        // Redirect to onboarding after signup (new users always need to complete profile)
-        window.location.href = '/physical-ai-humaniod-robotics/onboarding';
+        // AuthContext will automatically redirect to onboarding if needed
       } else {
-        await login(email, password);
+        await loginWithEmail(email, password);
         setShowModal(false);
         resetForm();
-        // After login, let the onboarding page check if profile exists
-        // It will redirect to home if profile already completed
-        window.location.href = '/physical-ai-humaniod-robotics/onboarding';
+        // AuthContext will automatically redirect to onboarding if profile doesn't exist
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -118,10 +106,13 @@ export default function NavbarAuth() {
     setShowDropdown(false);
   };
 
-  const handleGoogleSignIn = () => {
-    // Redirect to backend Google OAuth endpoint
-    const backendUrl = 'http://localhost:8000';
-    window.location.href = `${backendUrl}/api/auth/google/authorize`;
+  const handleGoogleSignIn = async () => {
+    // Use Better Auth Google OAuth (client-side initiation for proper state cookie)
+    try {
+      await loginWithGoogle();
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+    }
   };
 
   const getInitials = (name: string) => {

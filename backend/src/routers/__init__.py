@@ -1,7 +1,8 @@
 """
-API routers for authentication and profile management.
+API routers for profile and chat management.
+Authentication is handled by Better Auth TypeScript service.
 """
 
-from . import auth, oauth, profile
+from . import profile, chat
 
-__all__ = ["auth", "oauth", "profile"]
+__all__ = ["profile", "chat"]

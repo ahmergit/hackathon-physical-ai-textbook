@@ -2,6 +2,12 @@
  * Chat API client with SSE (Server-Sent Events) streaming support.
  */
 
+// Helper to get access token from localStorage
+function getAccessToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('access_token');
+}
+
 export interface ConversationMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -53,16 +59,27 @@ export class ChatApiClient {
     onEvent: StreamEventHandler,
     signal?: AbortSignal
   ): Promise<void> {
+    const accessToken = getAccessToken();
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
     const response = await fetch(`${this.baseUrl}/chat`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(request),
       signal,
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Please log in to use the chat');
+      }
       throw new Error(`Chat API error: ${response.statusText}`);
     }
 

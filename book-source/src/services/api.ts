@@ -1,35 +1,41 @@
 /**
- * API client for Physical AI Auth backend.
- * Handles all HTTP requests with axios.
+ * API client for FastAPI backend.
+ * Updated for Better Auth JWT authentication.
+ *
+ * Authentication handled by Better Auth TypeScript service.
+ * This client adds Bearer tokens to requests for protected FastAPI routes.
  */
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import type {
-  User,
-  UserProfile,
-  RegisterRequest,
-  RegisterResponse,
-  LoginRequest,
-  LoginResponse,
-  VerifyEmailRequest,
-  VerifyEmailResponse,
-  ResendVerificationRequest,
-  CreateProfileRequest,
-  ForgotPasswordRequest,
-  ResetPasswordRequest,
-  APIError,
-} from '../types/auth';
 
-// Re-export ExperienceLevel for convenience
-export { ExperienceLevel } from '../types/auth';
-
-// API base URL - hardcoded for browser compatibility
-// In production, update this or use Docusaurus customFields
-const API_BASE_URL = 'http://localhost:8000';
+// API base URLs - browser-compatible environment variable access
+const API_BASE_URL =
+  typeof process !== 'undefined' && process.env?.BACKEND_URL
+    ? process.env.BACKEND_URL
+    : 'http://localhost:8000';
+const AUTH_SERVICE_URL =
+  typeof process !== 'undefined' && process.env?.AUTH_SERVICE_URL
+    ? process.env.AUTH_SERVICE_URL
+    : 'http://localhost:3001';
 const API_TIMEOUT = 30000;
 
 /**
- * Axios instance configured for auth API.
+ * Enums matching backend models
+ */
+export enum SkillLevel {
+  BEGINNER = 'beginner',
+  INTERMEDIATE = 'intermediate',
+  EXPERT = 'expert',
+}
+
+export enum DeviceType {
+  CLOUD_LAPTOP = 'cloud_laptop',
+  RTX_GPU = 'rtx_gpu',
+  PHYSICAL_ROBOT = 'physical_robot',
+}
+
+/**
+ * Axios instance configured for FastAPI backend.
  */
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -37,50 +43,97 @@ const apiClient: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Send HTTP-only cookies
 });
 
 /**
- * Request interceptor to add auth token if available.
+ * Request interceptor: Add Bearer token from localStorage
  */
 apiClient.interceptors.request.use(
   (config) => {
-    // Token is sent via HTTP-only cookie, no need to add manually
+    const accessToken = localStorage.getItem('access_token');
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
 /**
- * Response interceptor to handle errors consistently.
+ * Response interceptor: Handle 401 with token refresh
  */
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<APIError>) => {
-    if (error.response) {
-      // Server responded with error status
-      const { status, data } = error.response;
+  async (error: AxiosError) => {
+    const originalRequest = error.config as any;
 
-      if (status === 401) {
-        // Unauthorized - clear auth state and redirect to login
-        console.warn('Unauthorized request, clearing auth state');
-        // Dispatch custom event for auth context to handle
-        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+    // Handle 401 Unauthorized - try to refresh token
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      // Check if we have tokens to refresh
+      const refreshToken = localStorage.getItem('refresh_token');
+      const accessToken = localStorage.getItem('access_token');
+      
+      // If no tokens exist, just reject without redirect
+      // This happens during initial login/onboarding flow
+      if (!refreshToken && !accessToken) {
+        return Promise.reject(error);
       }
+
+      try {
+        if (!refreshToken) {
+          throw new Error('No refresh token available');
+        }
+
+        const response = await axios.post(
+          `${AUTH_SERVICE_URL}/api/auth/refresh`,
+          { refreshToken }
+        );
+
+        const { accessToken: newAccessToken } = response.data;
+        localStorage.setItem('access_token', newAccessToken);
+
+        // Retry original request with new token
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        return axios.request(originalRequest);
+
+      } catch (refreshError) {
+        // Refresh failed - clear tokens
+        console.error('Token refresh failed:', refreshError);
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+
+        // Only redirect if we actually had tokens (real session expiry)
+        // Don't redirect during initial auth flow
+        if (accessToken || refreshToken) {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+            // Don't redirect from onboarding page - let it handle the error
+            if (!window.location.pathname.includes('/onboarding')) {
+              window.location.href = '/physical-ai-humaniod-robotics/?error=session_expired';
+            }
+          }
+        }
+
+        return Promise.reject(refreshError);
+      }
+    }
+
+    // Handle other errors
+    if (error.response) {
+      const { status } = error.response;
 
       if (status === 403) {
         console.warn('Forbidden access');
       }
 
       if (status === 422) {
-        // Validation error from FastAPI
-        console.error('Validation error:', data.detail);
+        console.error('Validation error:', error.response.data);
       }
     } else if (error.request) {
-      // Request made but no response
       console.error('No response from server:', error.message);
     } else {
-      // Error setting up request
       console.error('Request error:', error.message);
     }
 
@@ -89,149 +142,76 @@ apiClient.interceptors.response.use(
 );
 
 /**
- * Authentication API methods.
+ * Profile API methods (Protected routes - require JWT)
  */
-export const authAPI = {
+export const profileAPI = {
   /**
-   * Register a new user with email and password.
+   * Get current user's profile
    */
-  async register(data: RegisterRequest): Promise<RegisterResponse> {
-    const response = await apiClient.post<RegisterResponse>('/auth/register', data);
+  async getProfile() {
+    const response = await apiClient.get('/api/profile');
     return response.data;
   },
 
   /**
-   * Login with email and password.
-   * Returns access token (also sets HTTP-only cookie).
+   * Create user profile (onboarding)
    */
-  async login(data: LoginRequest): Promise<LoginResponse> {
-    // FastAPI expects form data for OAuth2PasswordRequestForm
-    const formData = new URLSearchParams();
-    formData.append('username', data.username);
-    formData.append('password', data.password);
+  async createProfile(data: {
+    hardware_skill: 'beginner' | 'intermediate' | 'expert';
+    programming_skill: 'beginner' | 'intermediate' | 'expert';
+    ai_ml_skill: 'beginner' | 'intermediate' | 'expert';
+    current_device: 'cloud_laptop' | 'rtx_gpu' | 'physical_robot';
+  }) {
+    const response = await apiClient.post('/api/profile', data);
+    return response.data;
+  },
 
-    const response = await apiClient.post<LoginResponse>('/auth/login', formData, {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  /**
+   * Update user profile
+   */
+  async updateProfile(data: Partial<{
+    hardware_skill: 'beginner' | 'intermediate' | 'expert';
+    programming_skill: 'beginner' | 'intermediate' | 'expert';
+    ai_ml_skill: 'beginner' | 'intermediate' | 'expert';
+    current_device: 'cloud_laptop' | 'rtx_gpu' | 'physical_robot';
+  }>) {
+    const response = await apiClient.put('/api/profile', data);
+    return response.data;
+  },
+
+  /**
+   * Delete user profile
+   */
+  async deleteProfile() {
+    await apiClient.delete('/api/profile');
+  },
+};
+
+/**
+ * Chat API methods (Protected routes - require JWT)
+ */
+export const chatAPI = {
+  /**
+   * Send chat message (SSE streaming handled separately)
+   */
+  async sendMessage(message: string, conversationHistory?: any[]) {
+    const response = await apiClient.post('/api/chat', {
+      query: message,
+      conversation_history: conversationHistory || [],
     });
     return response.data;
   },
 
   /**
-   * Logout current user and invalidate tokens.
+   * Health check
    */
-  async logout(): Promise<void> {
-    await apiClient.post('/auth/logout');
-  },
-
-  /**
-   * Get current authenticated user.
-   */
-  async getCurrentUser(): Promise<User> {
-    const response = await apiClient.get<User>('/auth/me');
-    return response.data;
-  },
-
-  /**
-   * Verify email with token from verification email.
-   */
-  async verifyEmail(data: VerifyEmailRequest): Promise<VerifyEmailResponse> {
-    const response = await apiClient.post<VerifyEmailResponse>('/auth/verify', data);
-    return response.data;
-  },
-
-  /**
-   * Verify email with 6-digit verification code.
-   */
-  async verifyCode(data: { email: string; code: string }): Promise<VerifyEmailResponse> {
-    const response = await apiClient.post<VerifyEmailResponse>('/auth/verify-code', data);
-    return response.data;
-  },
-
-  /**
-   * Resend verification email.
-   */
-  async resendVerification(data: ResendVerificationRequest): Promise<{ message: string }> {
-    const response = await apiClient.post<{ message: string }>('/auth/resend-verification', data);
-    return response.data;
-  },
-
-  /**
-   * Request password reset email.
-   */
-  async forgotPassword(data: ForgotPasswordRequest): Promise<{ message: string }> {
-    const response = await apiClient.post<{ message: string }>('/auth/forgot-password', data);
-    return response.data;
-  },
-
-  /**
-   * Reset password with token.
-   */
-  async resetPassword(data: ResetPasswordRequest): Promise<{ message: string }> {
-    const response = await apiClient.post<{ message: string }>('/auth/reset-password', data);
-    return response.data;
-  },
-
-  /**
-   * Initiate Google OAuth flow.
-   * Returns authorization URL to redirect to.
-   */
-  getGoogleAuthURL(): string {
-    return `${API_BASE_URL}/auth/google`;
-  },
-};
-
-/**
- * Profile API methods.
- */
-export const profileAPI = {
-  /**
-   * Get current user's profile.
-   */
-  async getProfile(): Promise<UserProfile> {
-    const response = await apiClient.get<UserProfile>('/profile');
-    return response.data;
-  },
-
-  /**
-   * Create user profile (onboarding).
-   */
-  async createProfile(data: CreateProfileRequest): Promise<UserProfile> {
-    const response = await apiClient.post<UserProfile>('/profile', data);
-    return response.data;
-  },
-
-  /**
-   * Update existing user profile.
-   */
-  async updateProfile(data: Partial<CreateProfileRequest>): Promise<UserProfile> {
-    const response = await apiClient.put<UserProfile>('/profile', data);
+  async healthCheck() {
+    const response = await apiClient.get('/api/chat/health');
     return response.data;
   },
 };
 
 /**
- * Health check API.
+ * Export the configured axios instance for custom requests
  */
-export const healthAPI = {
-  /**
-   * Check API health status.
-   */
-  async checkHealth(): Promise<{ status: string; service: string; version: string }> {
-    const response = await apiClient.get('/health');
-    return response.data;
-  },
-};
-
-/**
- * Export configured axios instance for advanced use cases.
- */
-export { apiClient };
-
-/**
- * Export default API object with all methods.
- */
-export default {
-  auth: authAPI,
-  profile: profileAPI,
-  health: healthAPI,
-};
+export default apiClient;

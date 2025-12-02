@@ -1,18 +1,21 @@
 """
 Chat router with SSE streaming support.
+Updated for Better Auth JWT authentication.
 """
 
 import json
 import logging
 from typing import AsyncGenerator
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from agents import Runner
 
 from ..schemas.chat import ChatRequest, ChatStreamDelta, ChatStreamDone, ChatStreamError, Citation
 from ..chatbot.agent import create_textbook_agent
 from ..chatbot.context import ChatbotRunContext
+from ..middleware.jwt_auth import get_current_user
+from ..models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -134,19 +137,30 @@ async def generate_chat_stream(request: ChatRequest) -> AsyncGenerator[str, None
 
 
 @router.post("")
-async def chat(request: ChatRequest):
+async def chat(
+    request: ChatRequest,
+    user: User = Depends(get_current_user)
+):
     """
     Chat endpoint with Server-Sent Events (SSE) streaming.
+
+    **Requires authentication via Bearer token.**
 
     Accepts a user message and optional conversation history, then streams
     the AI response token-by-token along with citations.
 
     Args:
         request: ChatRequest with message and context
+        user: Authenticated user from JWT token
 
     Returns:
         StreamingResponse with SSE events
+
+    Raises:
+        HTTPException: 401 if not authenticated
     """
+    logger.info(f"Chat request from user {user.id} ({user.email})")
+
     return StreamingResponse(
         generate_chat_stream(request),
         media_type="text/event-stream",

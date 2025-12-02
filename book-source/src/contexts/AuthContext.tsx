@@ -1,5 +1,26 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authAPI } from '../services/api';
+/**
+ * AuthContext - Updated for Better Auth integration
+ *
+ * Handles authentication flow:
+ * 1. Better Auth manages email/password + Google OAuth
+ * 2. After auth, calls /api/sync-user to get JWT tokens
+ * 3. Stores tokens in localStorage for FastAPI API calls
+ * 4. Redirects to /onboarding if profile doesn't exist
+ */
+
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import { useSession, signIn, signUp, signOut } from '../lib/auth-client';
+import axios from 'axios';
+
+// Helper to get auth service URL (browser-compatible)
+const getAuthServiceUrl = () =>
+  typeof process !== 'undefined' && process.env?.AUTH_SERVICE_URL
+    ? process.env.AUTH_SERVICE_URL
+    : 'http://localhost:3001';
+
+// Module-level sync tracking to prevent duplicate calls across StrictMode remounts
+let globalSyncPromise: Promise<any> | null = null;
+let globalSyncedUserId: string | null = null;
 
 interface User {
   id: string;
@@ -10,139 +31,211 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  accessToken: string | null;
+
+  // Email/password auth (PRIMARY)
+  loginWithEmail: (email: string, password: string) => Promise<void>;
+  signupWithEmail: (name: string, email: string, password: string) => Promise<void>;
+
+  // Google OAuth (SECONDARY)
+  loginWithGoogle: () => Promise<void>;
+
+  // Common
+  logout: () => Promise<void>;
+  refreshAccessToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AUTH_STORAGE_KEY = 'physical_ai_auth_user';
-
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { data: session, isPending } = useSession();
   const [user, setUser] = useState<User | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Use ref to track synced user ID - survives re-renders
+  const syncedUserIdRef = useRef<string | null>(null);
 
-  // Load user from localStorage on mount AND check for OAuth callback params
+  // Sync user from Better Auth session
   useEffect(() => {
-    try {
-      // Check for OAuth callback parameters in URL
-      if (typeof window !== 'undefined') {
-        const urlParams = new URLSearchParams(window.location.search);
-        const authToken = urlParams.get('auth_token');
-        const userData = urlParams.get('user');
-        
-        if (authToken && userData) {
-          // OAuth callback - save token and user data
-          localStorage.setItem('access_token', authToken);
-          const parsedUser = JSON.parse(decodeURIComponent(userData));
-          setUser(parsedUser);
-          
-          // Clean up URL params
-          const cleanUrl = window.location.pathname;
-          window.history.replaceState({}, document.title, cleanUrl);
+    const syncUser = async () => {
+      // Skip if still pending
+      if (isPending) return;
+      
+      if (session?.user) {
+        // Skip if we already synced this user (check both ref and global)
+        if (syncedUserIdRef.current === session.user.id || globalSyncedUserId === session.user.id) {
           setIsLoading(false);
           return;
         }
+        
+        // If there's already a sync in progress for this user, wait for it
+        if (globalSyncPromise && globalSyncedUserId === session.user.id) {
+          try {
+            const result = await globalSyncPromise;
+            setUser(result.user);
+            setAccessToken(result.accessToken);
+            syncedUserIdRef.current = session.user.id;
+          } catch (e) {
+            // Ignore - the original call will handle errors
+          }
+          setIsLoading(false);
+          return;
+        }
+        
+        // Start sync and store promise globally to dedupe concurrent calls
+        const doSync = async () => {
+          const response = await axios.post(
+            `${getAuthServiceUrl()}/api/sync-user`,
+            {},
+            { withCredentials: true }
+          );
+          return response.data;
+        };
+        
+        globalSyncPromise = doSync();
+        globalSyncedUserId = session.user.id;
+        
+        try {
+          const { user: userData, accessToken: token, refreshToken, needsOnboarding } = await globalSyncPromise;
+
+          // Store JWT tokens for FastAPI API calls
+          if (token) {
+            localStorage.setItem('access_token', token);
+            setAccessToken(token);
+          }
+          if (refreshToken) {
+            localStorage.setItem('refresh_token', refreshToken);
+          }
+
+          setUser(userData);
+          syncedUserIdRef.current = session.user.id;
+
+          // Redirect to onboarding if needed (only if not already there)
+          if (needsOnboarding && typeof window !== 'undefined') {
+            const currentPath = window.location.pathname;
+            if (!currentPath.includes('/onboarding')) {
+              window.location.href = '/physical-ai-humaniod-robotics/onboarding';
+            }
+          }
+        } catch (error) {
+          console.error('Failed to sync user:', error);
+          syncedUserIdRef.current = session.user.id;
+        } finally {
+          globalSyncPromise = null;
+        }
+      } else {
+        // No session, clear local state
+        setUser(null);
+        setAccessToken(null);
+        syncedUserIdRef.current = null;
+        globalSyncedUserId = null;
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
       }
-      
-      // No OAuth params - load from localStorage
-      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (stored) {
-        setUser(JSON.parse(stored));
-      }
-    } catch (e) {
-      console.error('Failed to load auth state:', e);
-    }
-    setIsLoading(false);
-  }, []);
+      setIsLoading(false);
+    };
 
-  // Save user to localStorage when it changes
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-    }
-  }, [user]);
+    syncUser();
+  }, [session?.user?.id, isPending]);
 
-  const login = async (email: string, password: string) => {
-    // Use authAPI for login
-    const tokenData = await authAPI.login({ username: email, password });
-    
-    // Store token
-    localStorage.setItem('access_token', tokenData.access_token);
-    
-    // Get user info
+  // Email/password signup (PRIMARY METHOD)
+  const signupWithEmail = async (name: string, email: string, password: string) => {
     try {
-      const userData = await authAPI.getCurrentUser();
-      const loggedInUser: User = {
-        id: userData.id,
-        email: userData.email,
-        name: (userData as any).name || userData.email.split('@')[0],
-      };
-      setUser(loggedInUser);
-    } catch {
-      // If getCurrentUser fails, create user from email
-      const loggedInUser: User = {
-        id: '',
-        email: email,
-        name: email.split('@')[0],
-      };
-      setUser(loggedInUser);
-    }
-  };
-
-  const signup = async (name: string, email: string, password: string) => {
-    try {
-      // Use authAPI for registration with name
-      const userData = await authAPI.register({
+      await signUp.email({
+        name,
         email,
         password,
-        name,
       });
-      
-      // Auto-login after registration (email verification disabled)
-      const tokenData = await authAPI.login({ username: email, password });
-      localStorage.setItem('access_token', tokenData.access_token);
-      
-      // Create user from response
-      const newUser: User = {
-        id: userData.id,
-        email: userData.email,
-        name: name || email.split('@')[0],
-      };
-      
-      setUser(newUser);
-      
-      // Redirect to onboarding to set up profile
-      window.location.href = '/physical-ai-humaniod-robotics/onboarding';
-      
+
+      // After signup, sign in automatically
+      await loginWithEmail(email, password);
     } catch (error: any) {
-      // Extract meaningful error message from API response
-      if (error.response?.data?.detail) {
-        const detail = error.response.data.detail;
-        if (typeof detail === 'string') {
-          throw new Error(detail);
-        } else if (detail.reason) {
-          throw new Error(detail.reason);
-        } else if (Array.isArray(detail)) {
-          // Validation errors array
-          throw new Error(detail.map((d: any) => d.msg).join(', '));
-        }
-      }
-      throw error;
+      console.error('Signup failed:', error);
+      throw new Error(error.message || 'Signup failed');
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('access_token');
-    authAPI.logout().catch(() => {}); // Ignore logout errors
-    setUser(null);
+  // Email/password login (PRIMARY METHOD)
+  const loginWithEmail = async (email: string, password: string) => {
+    try {
+      await signIn.email({
+        email,
+        password,
+      });
+
+      // Session will update automatically, triggering useEffect above
+    } catch (error: any) {
+      console.error('Login failed:', error);
+      throw new Error(error.message || 'Login failed');
+    }
+  };
+
+  // Google OAuth login (SECONDARY OPTION)
+  // Uses Better Auth client to properly set state cookie before redirect
+  const loginWithGoogle = async () => {
+    try {
+      await signIn.social({
+        provider: "google",
+        // Redirect to home page - AuthContext will handle sync and redirect to onboarding if needed
+        callbackURL: window.location.origin + "/physical-ai-humaniod-robotics/",
+      });
+    } catch (error: any) {
+      console.error('Google OAuth failed:', error);
+      throw new Error(error.message || 'Google OAuth failed');
+    }
+  };
+
+  // Logout
+  const logout = async () => {
+    try {
+      await signOut();
+      setUser(null);
+      setAccessToken(null);
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      if (typeof window !== 'undefined') {
+        window.location.href = '/physical-ai-humaniod-robotics/';
+      }
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  // Refresh access token
+  const refreshAccessToken = async (): Promise<string | null> => {
+    try {
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (!refreshToken) return null;
+
+      const response = await axios.post(
+        `${getAuthServiceUrl()}/api/auth/refresh`,
+        { refreshToken }
+      );
+
+      const { accessToken: newAccessToken } = response.data;
+      localStorage.setItem('access_token', newAccessToken);
+      setAccessToken(newAccessToken);
+      return newAccessToken;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      return null;
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, signup, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading: isLoading || isPending,
+        accessToken,
+        loginWithEmail,
+        signupWithEmail,
+        loginWithGoogle,
+        logout,
+        refreshAccessToken,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

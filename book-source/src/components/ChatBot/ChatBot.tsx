@@ -35,6 +35,7 @@ export function ChatBot({ onClose, isVisible = true, pendingText, onPendingTextU
   const { session, sendMessage, clearSession, cancelStream } = useChatSession();
   const { user } = useAuth();
   const [input, setInput] = useState('');
+  const [contextText, setContextText] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const history = useHistory();
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -42,22 +43,25 @@ export function ChatBot({ onClose, isVisible = true, pendingText, onPendingTextU
 
   const isLoggedIn = !!user;
 
-  // Handle pending text from text selection
+  // Handle pending text from text selection - store as context, not in input
   useEffect(() => {
     if (pendingText && isVisible) {
-      setInput(pendingText);
+      setContextText(pendingText);
       onPendingTextUsed?.();
-      // Focus the input and auto-resize after setting the text
+      // Focus the input for user to type their question
       setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
-          // Trigger auto-resize for pasted content
-          inputRef.current.style.height = 'auto';
-          inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 200) + 'px';
         }
       }, 100);
     }
   }, [pendingText, isVisible, onPendingTextUsed]);
+
+  // Clear context when chat is cleared
+  const handleClearSession = () => {
+    clearSession();
+    setContextText(null);
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -74,8 +78,10 @@ export function ChatBot({ onClose, isVisible = true, pendingText, onPendingTextU
       return;
     }
 
-    sendMessage(input.trim());
+    // Send message with context if available
+    sendMessage(input.trim(), contextText ? { selected_text: contextText } : undefined);
     setInput('');
+    setContextText(null); // Clear context after sending
     
     // Reset textarea to original size
     if (inputRef.current) {
@@ -150,7 +156,7 @@ export function ChatBot({ onClose, isVisible = true, pendingText, onPendingTextU
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {isLoggedIn && (
             <button
-              onClick={clearSession}
+              onClick={handleClearSession}
               style={{
                 background: 'rgba(255, 255, 255, 0.2)',
                 border: 'none',
@@ -401,6 +407,50 @@ export function ChatBot({ onClose, isVisible = true, pendingText, onPendingTextU
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Context indicator - shows when text is selected */}
+      {contextText && isLoggedIn && (
+        <div
+          style={{
+            padding: '8px 16px',
+            background: 'rgba(99, 102, 241, 0.15)',
+            borderTop: '1px solid rgba(99, 102, 241, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <span style={{ fontSize: '0.8rem', color: '#a5b4fc' }}>📎 Context:</span>
+          <span 
+            style={{ 
+              flex: 1, 
+              fontSize: '0.8rem', 
+              color: '#c7d2fe',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+            title={contextText}
+          >
+            "{contextText.length > 50 ? contextText.substring(0, 50) + '...' : contextText}"
+          </span>
+          <button
+            onClick={() => setContextText(null)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#9ca3af',
+              cursor: 'pointer',
+              padding: '4px',
+              fontSize: '0.9rem',
+              lineHeight: 1,
+            }}
+            title="Remove context"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Input / Login Button */}
       {isLoggedIn ? (
         <form
@@ -427,7 +477,7 @@ export function ChatBot({ onClose, isVisible = true, pendingText, onPendingTextU
                 }
               }
             }}
-            placeholder="Ask a question... (Shift+Enter for new line)"
+            placeholder={contextText ? "Ask about the selected text..." : "Ask a question... (Shift+Enter for new line)"}
             disabled={session.isStreaming}
             rows={1}
             style={{

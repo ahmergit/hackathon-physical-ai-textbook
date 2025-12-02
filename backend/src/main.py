@@ -17,7 +17,7 @@ from slowapi.errors import RateLimitExceeded
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .config import settings
-from .routers import auth, oauth, profile, chat
+from .routers import profile, chat  # Removed: auth, oauth (migrated to Better Auth)
 from .utils.rate_limit import limiter
 
 # Set OpenAI API key for the agents SDK (it looks for this env var)
@@ -139,10 +139,8 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
 
 
 # Include routers
-app.include_router(auth.router)
-app.include_router(oauth.router, prefix="/api")
-app.include_router(profile.router)
-
+# Removed: auth.router, oauth.router (migrated to Better Auth TypeScript service)
+app.include_router(profile.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 
 @app.get("/health", tags=["Health"])

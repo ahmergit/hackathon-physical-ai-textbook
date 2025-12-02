@@ -13,22 +13,31 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ..database import Base
 
 
-class ExperienceLevel(str, enum.Enum):
-    """Experience level enumeration for skills assessment."""
+class SkillLevel(str, enum.Enum):
+    """Skill level enumeration for hardware, programming, and AI/ML."""
 
     BEGINNER = "beginner"
     INTERMEDIATE = "intermediate"
-    ADVANCED = "advanced"
+    EXPERT = "expert"
+
+
+class DeviceType(str, enum.Enum):
+    """Current device/setup type enumeration."""
+
+    CLOUD_LAPTOP = "cloud_laptop"
+    RTX_GPU = "rtx_gpu"
+    PHYSICAL_ROBOT = "physical_robot"
 
 
 class Profile(Base):
     """
     User profile model storing onboarding and learning preference data.
 
-    Captures:
-    - Robotics, programming, and AI/ML experience levels
-    - Learning goals and preferences
-    - Time commitment
+    Captures (Better Auth integration):
+    - Hardware/robotics skill level (beginner, intermediate, expert)
+    - Programming skill level (beginner, intermediate, expert)
+    - AI/ML skill level (beginner, intermediate, expert)
+    - Current device/setup (cloud_laptop, rtx_gpu, physical_robot)
     """
 
     __tablename__ = "profiles"
@@ -41,12 +50,19 @@ class Profile(Base):
         ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False
     )
 
-    # Experience levels - simplified to 2 fields (stored as varchar)
-    ai_agents_experience: Mapped[str] = mapped_column(
-        String(50), nullable=False
+    # New skill level fields (Better Auth schema)
+    # Use values_callable to tell SQLAlchemy to use lowercase enum values for PostgreSQL
+    hardware_skill: Mapped[SkillLevel] = mapped_column(
+        Enum(SkillLevel, name='skilllevel', create_type=False, values_callable=lambda x: [e.value for e in x]), nullable=False
     )
-    robotics_hardware_experience: Mapped[str] = mapped_column(
-        String(50), nullable=False
+    programming_skill: Mapped[SkillLevel] = mapped_column(
+        Enum(SkillLevel, name='skilllevel', create_type=False, values_callable=lambda x: [e.value for e in x]), nullable=False
+    )
+    ai_ml_skill: Mapped[SkillLevel] = mapped_column(
+        Enum(SkillLevel, name='skilllevel', create_type=False, values_callable=lambda x: [e.value for e in x]), nullable=False
+    )
+    current_device: Mapped[DeviceType] = mapped_column(
+        Enum(DeviceType, name='devicetype', create_type=False, values_callable=lambda x: [e.value for e in x]), nullable=False
     )
 
     # Timestamps
@@ -61,4 +77,4 @@ class Profile(Base):
     user: Mapped["User"] = relationship("User", back_populates="profile")
 
     def __repr__(self) -> str:
-        return f"<Profile(user_id={self.user_id}, ai_agents={self.ai_agents_experience}, robotics_hw={self.robotics_hardware_experience})>"
+        return f"<Profile(user_id={self.user_id}, hw={self.hardware_skill}, prog={self.programming_skill}, ai={self.ai_ml_skill}, device={self.current_device})>"

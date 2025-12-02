@@ -41,15 +41,11 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     )
 
     # Relationships
-    oauth_accounts: Mapped[list["OAuthAccount"]] = relationship(
-        "OAuthAccount", back_populates="user", cascade="all, delete-orphan", lazy="selectin"
-    )
     profile: Mapped[Optional["Profile"]] = relationship(
         "Profile", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
-    email_verifications: Mapped[list["EmailVerification"]] = relationship(
-        "EmailVerification", back_populates="user", cascade="all, delete-orphan"
-    )
+    # Note: oauth_accounts relationship removed - Better Auth uses 'account' table
+    # Note: EmailVerification relationship removed - Better Auth handles email verification
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, verified={self.is_verified})>"

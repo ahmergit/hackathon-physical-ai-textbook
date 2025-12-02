@@ -1,5 +1,6 @@
 """
 Profile router for user onboarding and profile management.
+Updated for Better Auth integration with JWT tokens.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -7,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_async_session
-from ..dependencies.auth import current_verified_user
+from ..middleware.jwt_auth import get_current_user
 from ..models import Profile, User
 from ..schemas import ProfileCreate, ProfileRead, ProfileUpdate
 
@@ -16,7 +17,7 @@ router = APIRouter(prefix="/profile", tags=["Profile"])
 
 @router.get("", response_model=ProfileRead)
 async def get_profile(
-    user: User = Depends(current_verified_user),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),
 ) -> ProfileRead:
     """
@@ -47,15 +48,15 @@ async def get_profile(
 @router.post("", response_model=ProfileRead, status_code=status.HTTP_201_CREATED)
 async def create_profile(
     profile_data: ProfileCreate,
-    user: User = Depends(current_verified_user),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),
 ) -> ProfileRead:
     """
     Create user profile (onboarding).
 
     Args:
-        profile_data: Profile creation data
-        user: Current verified user
+        profile_data: Profile creation data (hardware_skill, programming_skill, ai_ml_skill, current_device)
+        user: Current authenticated user
         session: Database session
 
     Returns:
@@ -74,11 +75,10 @@ async def create_profile(
             detail="Profile already exists. Use PUT to update.",
         )
 
-    # Create new profile
+    # Create new profile with Better Auth schema
     profile = Profile(
         user_id=user.id,
-        ai_agents_experience=profile_data.ai_agents_experience,
-        robotics_hardware_experience=profile_data.robotics_hardware_experience,
+        **profile_data.model_dump()
     )
 
     session.add(profile)
@@ -91,7 +91,7 @@ async def create_profile(
 @router.put("", response_model=ProfileRead)
 async def update_profile(
     profile_data: ProfileUpdate,
-    user: User = Depends(current_verified_user),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),
 ) -> ProfileRead:
     """
@@ -130,7 +130,7 @@ async def update_profile(
 
 @router.delete("", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_profile(
-    user: User = Depends(current_verified_user),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),
 ) -> None:
     """

@@ -1,3 +1,35 @@
+<!--
+  SYNC IMPACT REPORT
+  ==================
+  Version Change: 1.0.0 → 1.1.0
+  
+  Modified Principles:
+    - None renamed
+  
+  Added Sections:
+    - XI. Chapter Structural Consistency
+    - XII. Modular Content Architecture
+    - XIII. Technical Clarity & Actionability
+    - XIV. Terminology & Style Alignment
+    - XV. Reproducible Examples & Visuals
+    - XVI. Implementation-Friendly Accuracy
+    - XVII. Cross-Reference Integration
+    - XVIII. Explicit Assumptions & Dependencies
+    - XIX. Visual & Code Standards
+    - XX. Textbook Quality Mission
+  
+  Removed Sections:
+    - None
+  
+  Templates Requiring Updates:
+    - .specify/templates/plan-template.md ✅ (Constitution Check aligns)
+    - .specify/templates/spec-template.md ✅ (scope/requirements align)
+    - .specify/templates/tasks-template.md ✅ (task types reflect new principles)
+  
+  Follow-up TODOs:
+    - None
+-->
+
 # AI-Generated Book + Static Site + RAG Assistant Constitution
 
 ## Core Principles
@@ -98,6 +130,106 @@ Code, content, and config must be modular, documented, and organized for long-te
 - README files for each major directory or subsystem
 - Inline documentation for complex logic
 - Config files use standard formats (YAML, JSON, TOML) with schemas
+
+### XI. Chapter Structural Consistency
+All new chapters MUST follow a consistent structural template defined by the project's specification.
+
+**Requirements:**
+- Every chapter MUST use the approved chapter template structure
+- Section headings, ordering, and hierarchy MUST match the template
+- Front matter (metadata, prerequisites, learning objectives) MUST be present and complete
+- Chapter numbering and naming MUST follow established conventions
+- Deviations from template require explicit justification in the spec
+
+### XII. Modular Content Architecture
+Chapters MUST be written using clear, modular sections that enable future expansion without breaking coherence.
+
+**Requirements:**
+- Each section MUST be self-contained with clear entry and exit points
+- Sections MUST support insertion of new content without restructuring existing material
+- Avoid tight coupling between sections; use explicit references instead of implicit dependencies
+- Content modules MUST have defined interfaces (prerequisites, outputs, linkable concepts)
+- Expansion points MUST be documented for each major section
+
+### XIII. Technical Clarity & Actionability
+Each chapter MUST translate complex technical ideas into structured, actionable explanations.
+
+**Requirements:**
+- Abstract concepts MUST be accompanied by concrete examples or applications
+- Explanations MUST progress from foundational to advanced logically
+- Every technical claim MUST be verifiable or demonstrable
+- Action steps MUST be explicit: "Do X to achieve Y"
+- Avoid vague language ("might", "could", "somewhat"); use precise terminology
+
+### XIV. Terminology & Style Alignment
+All content MUST align with established terminology, formatting rules, and style guidelines across the project.
+
+**Requirements:**
+- Use glossary terms consistently; define new terms on first use
+- Follow the project style guide for formatting (headings, code blocks, callouts)
+- Maintain consistent voice (instructional, second-person where appropriate)
+- Acronyms MUST be expanded on first use per chapter
+- Units, notation, and conventions MUST match project standards
+
+### XV. Reproducible Examples & Visuals
+Chapters MUST include reproducible examples, diagrams, or workflows wherever the subject matter requires it.
+
+**Requirements:**
+- Code examples MUST be complete, runnable, and tested
+- Diagrams MUST have source files (e.g., Mermaid, Draw.io) committed alongside renders
+- Step-by-step workflows MUST be executable in sequence without hidden prerequisites
+- Data used in examples MUST be provided or generated deterministically
+- All visuals MUST have alt-text and captions
+
+### XVI. Implementation-Friendly Accuracy
+All explanations MUST stay technically accurate, implementation-friendly, and free from unnecessary abstraction.
+
+**Requirements:**
+- Descriptions MUST map to real implementations or APIs
+- Avoid over-abstraction that obscures how to actually build or use something
+- Include version numbers, compatibility notes, and known limitations
+- Error handling and edge cases MUST be addressed, not ignored
+- Performance implications MUST be stated where relevant
+
+### XVII. Cross-Reference Integration
+Any new chapter MUST integrate seamlessly into the project's internal cross-referencing system.
+
+**Requirements:**
+- All related chapters, sections, and concepts MUST be linked bidirectionally
+- Use defined link syntax (e.g., `[Chapter X: Title](/path)`) consistently
+- Update existing chapters to reference new content where appropriate
+- Navigation (sidebar, TOC, breadcrumbs) MUST be updated on chapter addition
+- Broken links MUST be detected and fixed before merge
+
+### XVIII. Explicit Assumptions & Dependencies
+Contributors MUST document assumptions, dependencies, and required background knowledge explicitly.
+
+**Requirements:**
+- Prerequisites section MUST list all required prior knowledge or completed chapters
+- External dependencies (tools, libraries, accounts) MUST be listed with versions
+- Assumptions about reader knowledge MUST be stated, not implied
+- Environmental requirements (OS, hardware, network) MUST be documented
+- Knowledge gaps MUST link to resources or preceding sections
+
+### XIX. Visual & Code Standards
+Visuals, examples, and code MUST follow the project's standards for clarity, naming, and maintainability.
+
+**Requirements:**
+- Code MUST use project naming conventions (camelCase, snake_case as defined)
+- Variable and function names MUST be descriptive and self-documenting
+- Diagrams MUST use consistent color schemes, fonts, and iconography
+- Screenshots MUST be current, high-resolution, and annotated where helpful
+- All code MUST pass linting and formatting checks before inclusion
+
+### XX. Textbook Quality Mission
+Every chapter addition MUST reinforce the project's core mission: creating a precise, consistent, and high-quality technical textbook.
+
+**Requirements:**
+- Content MUST meet academic or professional reference quality standards
+- Every section MUST contribute to the reader's measurable learning outcomes
+- Quality MUST be validated through review (automated checks, peer review, or testing)
+- Chapters MUST be valuable standalone and as part of the complete textbook
+- Continuous improvement: identified issues MUST be logged and addressed
 
 ## Technical Guidelines
 
@@ -208,6 +340,6 @@ Code, content, and config must be modular, documented, and organized for long-te
 
 ---
 
-**Version**: 1.0.0
+**Version**: 1.1.0
 **Ratified**: 2025-11-28
-**Last Amended**: 2025-11-28
+**Last Amended**: 2025-12-01

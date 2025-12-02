@@ -23,6 +23,7 @@ class Settings(BaseSettings):
 
     # Authentication & Security
     secret_key: str
+    jwt_secret: str  # Shared with auth-ts service - MUST be identical
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
 
