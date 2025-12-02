@@ -32,13 +32,12 @@ class Settings(BaseSettings):
     from_email: str = "noreply@example.com"
     from_name: str = "Physical AI Learning Platform"
 
-    # Google OAuth (optional)
+    # Google OAuth (optional - handled by Better Auth)
     google_client_id: str = ""
     google_client_secret: str = ""
 
     # Frontend URLs
     frontend_url: str = "http://localhost:3000"
-    email_verification_url: str = "http://localhost:3000/verify-email"
 
     # Environment
     environment: str = "development"

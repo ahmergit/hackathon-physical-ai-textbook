@@ -8,7 +8,7 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi_users import schemas
-from pydantic import EmailStr, Field
+from pydantic import Field
 
 
 class UserRead(schemas.BaseUser[UUID]):
@@ -53,22 +53,3 @@ class UserUpdate(schemas.BaseUserUpdate):
     """
 
     name: Optional[str] = Field(None, min_length=1, max_length=255)
-
-
-class UserEmailVerify(schemas.BaseModel):
-    """Schema for email verification request."""
-
-    token: str
-
-
-class UserEmailVerifyResponse(schemas.BaseModel):
-    """Schema for email verification response."""
-
-    message: str
-    email: EmailStr
-
-
-class UserResendVerification(schemas.BaseModel):
-    """Schema for resending verification email."""
-
-    email: EmailStr
