@@ -8,7 +8,7 @@ You are an expert AI assistant specializing in Spec-Driven Development (SDD). Yo
 
 This is the **Physical AI Humanoid Robotics Learning Platform** - an interactive educational platform that combines:
 - **Textbook Content**: Comprehensive learning materials on physical AI and humanoid robotics
-- **Authentication System**: FastAPI-based user management with email verification and OAuth
+- **Authentication System**: Better Auth (TypeScript) with email/password and Google OAuth, JWT integration with FastAPI
 - **RAG Chatbot**: OpenAI Agents SDK-powered Q&A assistant grounded in textbook content
 - **Static Site**: Docusaurus-based documentation and learning portal
 
@@ -218,7 +218,15 @@ Wait for consent; never auto-create ADRs. Group related decisions (stacks, authe
 
 ## Technology Stack
 
-### Backend (Python)
+### Authentication Service (TypeScript)
+- **Framework**: Express 4.18+
+- **Auth Library**: Better Auth 1.0+ (email/password + Google OAuth)
+- **Runtime**: Node.js 18+
+- **Database Driver**: pg (PostgreSQL)
+- **JWT**: jsonwebtoken for API token generation
+- **Port**: 3001 (development)
+
+### Backend API (Python)
 - **Framework**: FastAPI 0.122+ with async/await throughout
 - **Python Version**: 3.13+ (strict type hints required)
 - **Package Manager**: `uv` for dependency management
@@ -227,8 +235,7 @@ Wait for consent; never auto-create ADRs. Group related decisions (stacks, authe
   - Development: SQLite fallback (aiosqlite)
 - **ORM**: SQLAlchemy 2.0+ (async)
 - **Migrations**: Alembic
-- **Authentication**: FastAPI-Users 15.0+ with OAuth support (Google)
-- **Email**: SendGrid for transactional emails
+- **Authentication**: JWT verification middleware (shared secret with Better Auth)
 - **AI/RAG**:
   - OpenAI Agents SDK 0.6+ for chatbot orchestration
   - text-embedding-3-small for embeddings
@@ -237,22 +244,52 @@ Wait for consent; never auto-create ADRs. Group related decisions (stacks, authe
 - **Testing**: pytest with pytest-asyncio, pytest-cov
 - **Type Checking**: mypy (strict mode)
 - **Linting**: black, ruff
+- **Port**: 8000
 
 ### Frontend (TypeScript/React)
 - **Framework**: Docusaurus 3.9.2 (static site generator)
 - **Runtime**: Node.js 18+
 - **UI Library**: React 18+ with TypeScript
+- **Auth Client**: Better Auth React (@better-auth/react)
 - **Forms**: React Hook Form + Zod validation
-- **API Client**: Axios
+- **API Client**: Axios with Bearer token authentication
 - **Testing**:
   - Jest for unit tests
   - Playwright for E2E tests
   - React Testing Library
 - **Build Output**: Static HTML/CSS/JS for GitHub Pages or any static host
+- **Port**: 3000 (development)
 
 ## Common Development Commands
 
-### Backend Setup & Development
+### Auth Service Setup & Development
+
+```bash
+# Navigate to auth service
+cd backend/auth-ts
+
+# Install dependencies
+npm install
+
+# Environment setup
+cp .env.example .env
+# Edit .env with DATABASE_URL, JWT_SECRET (must match FastAPI), GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+
+# Database setup (run Better Auth migration)
+npx @better-auth/cli migrate            # Creates user, session, account, verification tables
+
+# Development server
+npm run dev                             # Start with tsx watch on port 3001
+
+# Production build
+npm run build                           # Compile TypeScript
+npm start                               # Run compiled code
+
+# Type checking
+npm run typecheck                       # Run TypeScript compiler
+```
+
+### Backend API Setup & Development
 
 ```bash
 # Navigate to backend
@@ -265,7 +302,7 @@ pip install -r requirements.txt
 
 # Environment setup
 cp .env.example .env
-# Edit .env with your Neon PostgreSQL, SendGrid, Google OAuth credentials
+# Edit .env with DATABASE_URL, JWT_SECRET (must match auth-ts), OPENAI_API_KEY, QDRANT_URL
 
 # Database migrations
 alembic upgrade head                    # Apply all migrations
@@ -306,7 +343,7 @@ npm install
 
 # Environment setup
 cp .env.example .env
-# Edit .env with API_BASE_URL=http://localhost:8000
+# Edit .env with API_BASE_URL=http://localhost:8000, AUTH_SERVICE_URL=http://localhost:3001
 
 # Development server
 npm run start                           # Start Docusaurus dev server (http://localhost:3000)
@@ -329,46 +366,65 @@ npm run deploy                          # Deploy to GitHub Pages
 ### Full Stack Development
 
 ```bash
-# Terminal 1: Backend
+# Terminal 1: Auth Service
+cd backend/auth-ts && npm run dev
+
+# Terminal 2: Backend API
 cd backend && uvicorn src.main:app --reload --port 8000
 
-# Terminal 2: Frontend
+# Terminal 3: Frontend
 cd book-source && npm run start
 
 # Access:
 # - Frontend: http://localhost:3000
+# - Auth Service: http://localhost:3001
+# - Auth Health: http://localhost:3001/health
 # - Backend API Docs: http://localhost:8000/docs
 # - Backend Health: http://localhost:8000/health
 ```
 
 ## Project Architecture
 
-### Backend Structure (`backend/src/`)
+### Auth Service Structure (`backend/auth-ts/src/`)
 
 ```
 src/
-├── main.py                     # FastAPI app entry point with all routers
-├── config.py                   # Pydantic Settings for env vars
+├── index.ts                    # Express server entry point
+├── auth.ts                     # Better Auth configuration (email/password + Google OAuth)
+├── db.ts                       # PostgreSQL connection pool
+├── types/
+│   └── index.ts               # TypeScript interfaces
+└── routes/
+    └── sync-user.ts           # POST /api/sync-user - Syncs user to legacy table, returns JWT tokens
+
+Key Files:
+- auth.ts: Better Auth setup with emailAndPassword + Google OAuth
+- sync-user.ts: Bridges Better Auth session → JWT tokens for FastAPI
+```
+
+### Backend API Structure (`backend/src/`)
+
+```
+src/
+├── main.py                     # FastAPI app entry point with profile/chat routers
+├── config.py                   # Pydantic Settings for env vars (includes jwt_secret)
 ├── database.py                 # SQLAlchemy async engine & session
 ├── models/                     # SQLAlchemy ORM models
-│   ├── user.py                # User model (FastAPI-Users)
-│   ├── oauth.py               # OAuth accounts
-│   ├── profile.py             # User profiles
-│   └── email_verification.py  # Email verification tokens
+│   ├── user.py                # User model (synced from Better Auth)
+│   ├── profile.py             # User profiles (skill_level, device_type enums)
+│   └── oauth.py               # OAuth accounts (deprecated)
 ├── schemas/                    # Pydantic schemas for validation
 │   ├── user.py
-│   ├── profile.py
+│   ├── profile.py             # ProfileCreate/Update/Read with new enum fields
 │   └── chat.py                # Chatbot request/response schemas
 ├── routers/                    # FastAPI route handlers
-│   ├── auth.py                # Authentication endpoints
-│   ├── oauth.py               # Google OAuth flow
-│   ├── profile.py             # Profile CRUD
-│   └── chat.py                # Chatbot SSE streaming endpoint
+│   ├── profile.py             # Profile CRUD (requires JWT auth)
+│   └── chat.py                # Chatbot SSE streaming endpoint (requires JWT auth)
+├── middleware/                 # Custom middleware
+│   ├── __init__.py
+│   └── jwt_auth.py            # JWT verification, get_current_user dependency
 ├── services/                   # Business logic & external integrations
-│   ├── email_service.py       # SendGrid integration
-│   ├── user_manager.py        # FastAPI-Users manager
-│   ├── embedding_service.py   # OpenAI embeddings
-│   └── email_templates/       # Jinja2 HTML templates
+│   └── embedding_service.py   # OpenAI embeddings
 ├── chatbot/                    # RAG chatbot module (OpenAI Agents SDK)
 │   ├── agent.py               # Main agent with GPT-4o
 │   ├── models.py              # Dataclasses for messages/citations
@@ -378,9 +434,6 @@ src/
 │   │   └── qdrant_retriever.py  # @function_tool for vector search
 │   └── guardrails/
 │       └── topic_guard.py     # @input_guardrail for topic filtering
-├── dependencies/               # FastAPI dependencies
-│   ├── auth.py                # Auth backend setup
-│   └── user_db.py             # User database adapter
 └── utils/                      # Shared utilities
 
 scripts/                        # Automation scripts
@@ -391,7 +444,6 @@ scripts/                        # Automation scripts
     └── markdown_parser.py     # Parse markdown with frontmatter
 
 tests/                         # Pytest tests (mirror src/ structure)
-├── auth/                      # Authentication tests
 ├── chatbot/                   # RAG chatbot tests
 │   ├── test_retriever.py
 │   ├── test_agent.py
@@ -403,26 +455,33 @@ tests/                         # Pytest tests (mirror src/ structure)
 
 ```
 src/
+├── lib/
+│   └── auth-client.ts         # Better Auth React client (signIn, signUp, signOut, useSession)
 ├── components/
-│   └── ChatBot/               # RAG chatbot UI components
-│       ├── ChatBot.tsx        # Main chatbot component
-│       ├── Citation.tsx       # Citation display
-│       ├── QuickActions.tsx   # Explain/Summarize/Simplify buttons
-│       └── TextSelectionButton.tsx  # Floating "Ask about this" button
+│   ├── ChatBot/               # RAG chatbot UI components
+│   │   ├── ChatBot.tsx        # Main chatbot component
+│   │   ├── Citation.tsx       # Citation display
+│   │   ├── QuickActions.tsx   # Explain/Summarize/Simplify buttons
+│   │   └── TextSelectionButton.tsx  # Floating "Ask about this" button
+│   └── NavbarAuth/            # Auth UI components (login/signup forms)
 ├── hooks/
 │   ├── useChatSession.ts      # Session state & API calls
 │   └── useTextSelection.ts    # Text selection detection
 ├── services/
-│   ├── api.ts                 # Axios API client
+│   ├── api.ts                 # Axios API client (Bearer token authentication)
 │   └── chatApi.ts             # Chat-specific API calls (SSE)
 ├── types/
 │   └── auth.ts                # TypeScript types for auth
-└── pages/                     # Docusaurus page components
+├── contexts/
+│   └── AuthContext.tsx        # Auth state management with Better Auth
+└── pages/
+    ├── onboarding.tsx         # Onboarding form (4 skill/device fields)
+    └── auth-callback.tsx      # OAuth callback handler
 
 docs/                          # Markdown content (textbook chapters)
 ├── chapter-01/
 ├── chapter-02/
-└── ...
+└── chapter-03/
 
 static/                        # Static assets
 tests/                         # Jest & Playwright tests
@@ -450,21 +509,52 @@ tests/                         # Jest & Playwright tests
 - **Responsive Design**: Mobile-first, breakpoints at 320px, 768px, 1024px, 2560px
 - **Server-Sent Events**: `EventSource` for streaming chat responses
 
-### Authentication Flow
+### Authentication Flow (Better Auth + FastAPI)
 
-1. User registers (`POST /auth/register`) → sends verification email
-2. User clicks email link → verifies email (`POST /auth/verify-email`)
-3. User logs in (`POST /auth/login`) → receives JWT in HTTP-only cookie
-4. User creates profile (`POST /profile`) → stores experience levels & goals
-5. Protected routes check cookie via FastAPI-Users dependency
+**Architecture Overview:**
+```
+Frontend (React) ──→ Auth Service (Better Auth) ──→ PostgreSQL
+                ↓                                      ↑
+                ├──→ /api/sync-user ──────────────────┘
+                ↓    (returns JWT tokens)
+                └──→ Backend API (FastAPI + JWT middleware)
+```
+
+**User Registration & Login:**
+1. Frontend calls Better Auth:
+   - Email/Password: `authClient.signUp.email()` or `authClient.signIn.email()`
+   - Google OAuth: `authClient.signIn.social("google")`
+2. Better Auth creates session (HTTP-only cookie)
+3. Frontend calls Auth Service `/api/sync-user`:
+   - Verifies Better Auth session
+   - Syncs user to legacy `users` table
+   - Generates JWT tokens (access: 15-min, refresh: 7-day)
+   - Returns: `{ accessToken, refreshToken, needsOnboarding }`
+4. Frontend stores tokens in localStorage
+5. If `needsOnboarding=true`, redirect to `/onboarding`
+
+**Making API Calls to FastAPI:**
+1. Frontend sends request with `Authorization: Bearer <accessToken>`
+2. FastAPI JWT middleware (`middleware/jwt_auth.py`):
+   - Verifies JWT signature using shared `JWT_SECRET`
+   - Extracts `user_id` from token payload
+   - Injects user into request context via `get_current_user()` dependency
+3. Protected routes (profile, chat) access authenticated user
+
+**Token Refresh:**
+1. When access token expires (401 response)
+2. Frontend calls Better Auth `/api/auth/refresh` with refresh token
+3. Receives new access token
+4. Retries original request
 
 **Security Features:**
-- Bcrypt password hashing (cost factor 12)
-- HTTP-only cookies (XSS protection)
-- SameSite=Lax cookies (CSRF protection)
-- JWT tokens (15-min access, 7-day refresh)
-- Email verification required
-- CORS restricted to frontend origin
+- Bcrypt password hashing (handled by Better Auth)
+- HTTP-only cookies for session (Better Auth)
+- JWT tokens (15-min access, 7-day refresh) for API auth
+- Shared `JWT_SECRET` between Auth Service and FastAPI (HS256 algorithm)
+- CORS restricted to frontend/backend origins
+- Minimum password length: 8 characters
+- State cookie for OAuth (prevents CSRF)
 
 ### RAG Chatbot Flow
 
@@ -483,60 +573,93 @@ tests/                         # Jest & Playwright tests
 
 ## Database Schema
 
-### Users & Auth Tables
-- `users`: id, email, hashed_password, is_active, is_superuser, is_verified, created_at, updated_at
-- `oauth_accounts`: id, user_id (FK), oauth_name, account_id, account_email, tokens
-- `email_verifications`: id, user_id (FK), token, email, expires_at, is_used, created_at
-- `profiles`: id, user_id (FK, unique), robotics_experience, programming_experience, ai_ml_experience, learning_goals, preferred_learning_style, weekly_time_commitment
+### Better Auth Tables (managed by Better Auth migrations)
+- `user`: id (UUID), email, name, emailVerified, image, createdAt, updatedAt
+- `session`: id, userId (FK to user), expiresAt, token, ipAddress, userAgent
+- `account`: id, userId (FK to user), accountId, providerId, accessToken, refreshToken, expiresAt
+- `verification`: id, identifier, value, expiresAt
+
+### Legacy Tables (managed by Alembic migrations)
+- `users`: id (UUID, synced from Better Auth), email, created_at, updated_at
+  - **Important**: This table is synced by `/api/sync-user` endpoint for FastAPI compatibility
+- `profiles`: id, user_id (FK, unique), hardware_skill, programming_skill, ai_ml_skill, current_device
+  - **Enums**:
+    - `skill_level`: beginner, intermediate, expert
+    - `device_type`: cloud_laptop, rtx_gpu, physical_robot
 
 ### Key Relationships
 - `profiles.user_id` → `users.id` (one-to-one)
-- `oauth_accounts.user_id` → `users.id` (one-to-many)
-- `email_verifications.user_id` → `users.id` (one-to-many)
+- `users.id` synced from `user.id` (Better Auth → Legacy bridge)
+
+### Migration Notes
+- Better Auth tables use different naming conventions (camelCase) vs. SQLAlchemy (snake_case)
+- The `users` table acts as a bridge: Better Auth manages authentication, FastAPI manages profiles/RAG
 
 ## API Endpoints
 
-### Authentication (`/auth/*`)
-- `POST /auth/register` - Register user, send verification email
-- `POST /auth/login` - Login, set HTTP-only cookie
-- `POST /auth/logout` - Clear session
-- `GET /auth/me` - Get current user (requires auth)
-### OAuth (`/auth/google/*`)
-- `GET /auth/google/authorize` - Get Google OAuth URL
-- `GET /auth/google/callback` - OAuth callback handler
+### Auth Service (`:3001/api/auth/*`)
+Better Auth endpoints (managed by Better Auth framework):
+- `POST /api/auth/sign-up/email` - Email/password signup (name, email, password)
+- `POST /api/auth/sign-in/email` - Email/password login
+- `POST /api/auth/sign-in/social` - Initiate OAuth (Google)
+- `GET /api/auth/callback/google` - Google OAuth callback
+- `GET /api/auth/session` - Get current session (HTTP-only cookie)
+- `POST /api/auth/sign-out` - Logout (clear session)
+- `POST /api/auth/refresh` - Refresh access token
 
-### Profile (`/profile`)
-- `GET /profile` - Get user profile (requires auth)
-- `POST /profile` - Create profile (onboarding)
-- `PUT /profile` - Update profile
-- `DELETE /profile` - Delete profile
+Custom endpoint:
+- `POST /api/sync-user` - Sync Better Auth user to PostgreSQL, return JWT tokens
+  - **Response**: `{ accessToken, refreshToken, needsOnboarding: boolean }`
 
-### Chatbot (`/chat`)
-- `POST /chat` - Ask question, stream response via SSE (requires query, optional session_id)
+### Backend API (`:8000/api/*`)
 
-### Health
+#### Profile (`/api/profile`) - **Requires JWT Bearer Token**
+- `GET /api/profile` - Get user profile
+- `POST /api/profile` - Create profile (onboarding: hardware_skill, programming_skill, ai_ml_skill, current_device)
+- `PUT /api/profile` - Update profile
+- `DELETE /api/profile` - Delete profile
+
+#### Chatbot (`/api/chat`) - **Requires JWT Bearer Token**
+- `POST /api/chat` - Ask question, stream response via SSE (requires query, optional session_id)
+
+#### Health
 - `GET /health` - Health check (status, version, environment)
 - `GET /` - API information
 
 ## Environment Variables
 
-### Backend (`.env`)
+### Auth Service (`backend/auth-ts/.env`)
 ```bash
-# Database
-DATABASE_URL=postgresql+asyncpg://user:pass@host/db?sslmode=require
+# Database (MUST match FastAPI DATABASE_URL)
+DATABASE_URL=postgresql://user:pass@host/db?sslmode=require
 
-# Auth
-SECRET_KEY=<64-char-secret>              # Generate: python -c "import secrets; print(secrets.token_urlsafe(32))"
+# JWT Secret (MUST match FastAPI JWT_SECRET - CRITICAL!)
+JWT_SECRET=<64-char-secret>              # Generate: python -c "import secrets; print(secrets.token_urlsafe(48))"
 
 # OAuth (Google)
 GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=xxx
 
-# Frontend URLs
-FRONTEND_URL=http://localhost:3000
+# Service URLs
+AUTH_SERVICE_URL=http://localhost:3001   # This service's URL
+FRONTEND_URL=http://localhost:3000       # Frontend origin
+BACKEND_URL=http://localhost:8000        # FastAPI origin
+BETTER_AUTH_URL=http://localhost:3001    # Better Auth base URL
+
+# Server
+PORT=3001
+```
+
+### Backend API (`backend/.env`)
+```bash
+# Database (MUST match auth-ts DATABASE_URL)
+DATABASE_URL=postgresql+asyncpg://user:pass@host/db?sslmode=require
+
+# JWT Secret (MUST match auth-ts JWT_SECRET - CRITICAL!)
+JWT_SECRET=<same-as-auth-ts>             # MUST BE IDENTICAL
 
 # CORS
-CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+CORS_ORIGINS=http://localhost:3000,http://localhost:3001
 
 # Environment
 ENVIRONMENT=development                   # or production
@@ -547,10 +670,16 @@ QDRANT_URL=https://xxx.cloud.qdrant.io
 QDRANT_API_KEY=xxx
 ```
 
-### Frontend (`.env`)
+### Frontend (`book-source/.env`)
 ```bash
-API_BASE_URL=http://localhost:8000
+API_BASE_URL=http://localhost:8000        # FastAPI backend
+AUTH_SERVICE_URL=http://localhost:3001    # Better Auth service
 ```
+
+### Critical Configuration Notes
+1. **JWT_SECRET**: MUST be identical between auth-ts and FastAPI. If they don't match, JWT verification will fail.
+2. **DATABASE_URL**: MUST point to the same PostgreSQL database (different driver syntax: `postgresql://` for auth-ts, `postgresql+asyncpg://` for FastAPI)
+3. **Generate JWT_SECRET**: Use `python -c "import secrets; print(secrets.token_urlsafe(48))"` for a secure 64-character secret
 
 ## Testing Strategy
 
@@ -604,7 +733,36 @@ npm run test:e2e                    # Playwright E2E tests
 ## Code Standards
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
 
-## Recent Features
+## Recent Features & Migration Status
+
+### Completed Features
 - **005-textbook-chatbot**: RAG chatbot with OpenAI Agents SDK, Qdrant, streaming SSE, citations, guardrails
-- **004-auth-system**: FastAPI-Users authentication, email verification, Google OAuth, profile management
+- **004-auth-system** (Migrated to Better Auth):
+  - **Old**: FastAPI-Users with email verification and Google OAuth
+  - **New**: Better Auth (TypeScript) with email/password (primary) and Google OAuth (secondary)
+  - JWT token generation for FastAPI API authentication
+  - User profile with skill-level enums (hardware, programming, AI/ML) and device type
 - **003-chapter2-workforce-physical-ai**: Textbook content on workforce and physical AI
+
+### Better Auth Migration (Dec 2025)
+**Status**: Backend Complete ✅ | Frontend In Progress 🟡
+
+**Architecture**:
+```
+Frontend ──→ Better Auth (TypeScript) ──→ PostgreSQL
+       ↓                              ↑
+       └──→ /api/sync-user ──────────┘
+       ↓    (JWT tokens)
+       └──→ FastAPI (JWT middleware) ──→ Protected Routes
+```
+
+**Key Changes**:
+1. Separated authentication (Better Auth) from API logic (FastAPI)
+2. JWT-based API authentication with shared secret
+3. Profile schema updated: `skill_level` (beginner/intermediate/expert), `device_type` (cloud_laptop/rtx_gpu/physical_robot)
+4. All API routes now require `Authorization: Bearer <accessToken>` header
+
+**Migration Files**:
+- See `MIGRATION_STATUS.md` for detailed migration status and remaining tasks
+- See `backend/auth-ts/README.md` for auth service setup instructions
+- See `backend/auth-ts/setup.md` for step-by-step deployment guide
